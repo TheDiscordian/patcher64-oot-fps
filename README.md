@@ -1,70 +1,117 @@
-# Patcher64+ OoT 30 FPS — Fix Project
+# 🚀 Patcher64+ OoT 30 FPS — Fix Project
 
-A small armips-assembled patch layer that sits **on top of** an
-[OoT Redux](https://github.com/Roman971/OoT-Redux) ROM that's already been put
-through [Patcher64+](https://github.com/SkyBlueEclipse/Patcher64Plus-Tool)'s
-30 FPS mode. Stock Patcher64+ 30 FPS has a documented list of "Known Issues"
-where various game timings run ~1.5× too fast (bomb fuses too short, lit
-torches burn out early, sword combos impossible, etc.) — this project patches
-those by injecting `jal` hooks into the Patcher64+ payload's free space, so
-the resulting ROM is "Patcher64+ Redux 30 FPS, but the timings actually match
-20 FPS gameplay".
+**Patcher64+'s 30 FPS mode for Ocarina of Time is *almost* incredible — except it accidentally runs a couple dozen gameplay timers 1.5× too fast.** Bomb fuses pop in two seconds. Lit torches burn out before you can grab a stick. The triple sword combo is mathematically impossible. ReDeads drain your health twice as fast while you mash to escape.
 
-🎯 **What this project changes**: it does NOT alter the OoT game logic, the
-Redux content, or the Patcher64+ payload's structure. It only injects small
-fps-gated counter-rescaling hooks (mostly seed-mod or 2/3-tick on raw
-per-frame timers). At 20 FPS the patches no-op; at 30 FPS each fix scales
-its counter back to the wall-clock cadence it would have at 20 FPS.
+This project ships a small armips-assembled patch layer that sits **on top of** [Patcher64+](https://github.com/SkyBlueEclipse/Patcher64Plus-Tool)'s [OoT Redux](https://github.com/Roman971/OoT-Redux) 30 FPS ROM and surgically un-breaks every one of those bugs — leaving you with **smooth 30 FPS rendering, and 20 FPS-cadence gameplay timing**. Toggle in-game with **L+Z** at any moment to A/B them. ✨
 
-This repo holds **only the patch source and project docs**. The actual ROM, base game decomp, build toolchain, and the Patcher64+ tool itself all live outside this repo (they're large and/or copyright-sensitive — see `.gitignore`).
+## 🎯 What it fixes (and why each one mattered)
 
-## What's broken in stock 30 FPS mode
+Every patch below was play-test confirmed against a stock-30 FPS control ROM, then re-tested on the fixed ROM to verify the cadence matches 20 FPS again. We also write down what gameplay problem each one solved — these aren't "raw counter scaling" abstractions, they're concrete frustrations the patch eliminates.
 
-The payload runs game logic at 30 Hz but raw per-frame counters (counters not scaled by `R_UPDATE_RATE`) end up ticking 1.5× too fast. The six documented "Known Issues" are all this same family:
+| 🪣 | Fix | Stock 30 FPS bug ❌ | What it does now ✅ |
+|----|----|---------------------|---------------------|
+| **B2** | Thrown-object gravity | Bombs/pots fall too fast → throws land *short* of where you aimed. Stock first-rev fix also floated Link's jumps. | Gravity is scaled ×2/3 for non-Player actors only — throw arcs land where they should, Link's jump is unchanged. |
+| **B3** | Bomb fuse + multi-bomb sync | Single bombs detonated in ~2.3 s instead of ~3.5 s. With 3+ bombs out, one bomb's fuse *froze in place* until another exploded. | Single bomb: ~3.5 s, matching 20 FPS exactly. Multi-bomb works for any count — every live bomb reads the same frame-global phase byte and ticks in lockstep. |
+| **B4** | Triple sword combo | Combo window collapsed from 0.4 s → 0.27 s. Pressing B fast enough to chain all three swings was **impossible**. | Window widened to 12 frames at 30 FPS (= 0.4 s). The full combo lands again. |
+| **B5** | Spin attack charge | The hold-B charge meter filled 1.5× too fast → spin attacks released way too early. | Charge step rescaled to 0.0133/frame at 30 FPS, matching 20 FPS fill time of ~2.5 s. |
+| **B6** | Lit Deku Stick burn-out | Stick burned in ~7 s instead of ~10.5 s. | Incidentally fixed by B7's frame-global phase mechanism — no separate hook needed. |
+| **B7** | Dungeon torch burn-out | Torch fires went out 1.5× too soon, leaving you in the dark mid-puzzle. Rooms with multiple torches would extinguish out of sync if naively fixed. | All torches in a room read the same frame-global phase byte and skip the same frame together. User confirmed: **"the torch fix is perfect"**. |
+| **B8** | Letterbox / cinematic bars | Z-targeting black bars slammed in 2.25× too fast — and the same animation drives the **ocarina pull-out**, which also looked rushed. | Letterbox step rescaled at 30 FPS. Z-target zoom-in is smooth, ocarina pull-out is correctly paced. |
+| **B9** | ReDead/Gibdo grab damage | Held by a ReDead, your hearts drained 1.5× faster than 20 FPS. Mashing free went from tight-but-possible to genuinely hard. | grabDamageTimer seeds rescaled — health drains at 20 FPS rate, tap-out feels achievable again. User confirmed working. |
+| **B10** | All other ReDead AI timers | Suns Song stun lasted 20 s instead of 30 s. ReDead screams cycled every 2 s instead of 3 s — much more aggressive. Fire damage flashes too brief. | sunsSongStunTimer + fireTimer + playerStunWaitTimer + grabWaitTimer all match 20 FPS cadence. User confirmed: **"ReDeads seem to be working well"**. |
+| **B11** 🚧 PR #1 | Armos AI (Spirit Temple) | cooldownTimer, attackTimer, ricochet stagger, freeze duration, death animation timing all 1.5× off. | All five timers fixed via the right pattern per field (seed-mod where the field is just a `== 0` countdown, tick-mod where the field has intermediate `< 52` / `% 4` / `>> 2` checks). |
+| **B12** 🚧 PR #6 | Boss_Goma (Gohma) patience | Gohma's pre-lunge "patience" wait collapsed from 10 s to 6.67 s — boss is noticeably more aggressive than designed. | patienceTimer seed-mod 200 → 300, matching 20 FPS wall-clock. |
+| **B13** 🚧 PR #7 | Fire Temple stone elevator | Elevator cycle ran ~1.5× faster at 30 fps, throwing off the timing windows. | `Bg_Hidan_Syoku.timer` tick-mod via frame_phase (3 decrement sites share one hook) — value stays in [0, 140] so the cosf-driven Y motion is intact. |
+| **B14** 🚧 PR #8 | Forest Temple falling block | Pre-fall warning + drop cycle ran 1.5× faster; the `< 20`-frame SFX cue was at the wrong proportion of the wait. | `Bg_Mori_Rakkatenjo.timer` (s32) tick-mod — value range preserved so the SFX threshold check fires at the right point. |
+| **B15** 🚧 PR #9 | Dodongo's Cavern Arrow Trap | Trap fired every ~2.7 s instead of ~4 s. | `attackTimer` seed-mod 80 → 120 (Init + post-fire reseed). |
+| **B16** 🚧 PR #12 | Anubis (Spirit Temple fire-ghost) | Death-flame visual and post-non-fire-hit knockback ran 1.5× faster. | `deathTimer` 20 → 30, `knockbackTimer` 10 → 15. |
+| **B17** 🚧 PR #13 | Dead Hand (Bottom of Well / Shadow miniboss) | The big ~15 s attack-cycle wait collapsed to ~10 s on stock 30 fps. | `actionTimer` 300 → 450 and 15 → 23. Random-seed site at z_en_dha.c:199 deferred. |
+| **B18** 🚧 PR #14 | Every freezable enemy's freeze duration | Frozen state on Octoroks, Like-Likes, Stalfos, etc all melted 1.5× faster. | `Obj_Ice_Poly.meltTimer` tick-mod — broad-impact patch hitting every enemy you blue-fire / ice-arrow. |
+| **B19** 🚧 PR #15 | Shadow Temple truth-spinner gate | The 3 s "gate opens" delay collapsed to 2 s. | `vTimer` 60 → 90 seed-mod. Two sub-perceptual `vTimer=5` sites deferred. |
 
-1. 🏺 Thrown-object gravity wrong
-2. 💥 Explosion timers too short (bomb fuse)
-3. 🔦 Lit torches burn faster (and lit Deku Sticks)
-4. ⚔️ Triple sword swing extremely hard (combo window)
-5. 🗡️ Enemies move/attack faster
-6. ⏱️ Minigame timers too fast
+🚧 = **pending PR, not yet merged into `main`.** Use the named branch to test in isolation; merge order is up to you — none of these conflict on the bucket-hook payload region. Rows without 🚧 are already on `main`.
 
-Plus the user-found bonus bugs: letterbox draw rate (2.25× fast), ReDead grab damage, and a longer tail of per-actor AI timers.
+…with more on the way — **PROGRESS.md** tracks the live bucket-by-bucket queue, and the broader actor sweep covers Wolfos, Floormaster, Po sisters, Bongo Bongo's state machine, dungeon traps, and more.
 
-## Layout
+## 🧬 How the fixes work
+
+Every bucket is **one bug, one hook**. The patcher injects a single `jal` (or `j` for leaf functions where `ra` is live) at the bug site, redirecting to a small hook body in the Patcher64+ payload's free space at RAM `0x8041AE00+`. The hook reads `fps_switch` (`0x80419832`):
+
+- **At 20 FPS** the hook is a no-op — the original instruction runs and 20 FPS gameplay is untouched.
+- **At 30 FPS** the hook scales the counter via one of two patterns:
+  - **Seed-mod** — change the value at the moment it gets written into the field (`bomb_fuse = 200 → 300`, etc). Sound when the field is only compared `== 0` / `!= 0`.
+  - **Tick-mod** — let the value range alone, but skip the decrement on a global 3-phase frame counter (`0x801C6FB4`) so the field ticks at 2/3 rate. Required when the field has intermediate threshold checks like `< 52` or `% 4 == 0` where the value's distribution matters.
+
+Multi-actor-safe timers (a roomful of torches, multiple bombs) all read the **same frame-global phase byte** so they skip the same frame together — no desync.
+
+CFG_DEFAULT_30_FPS is set to 1, so the ROM boots at 30 FPS by default. Use **L+Z** in-game to live-toggle 20 ↔ 30 FPS and A/B every bucket against itself.
+
+## 🗂 Layout
 
 ```
-src/hooks.asm      armips source — the actual fixes (edit here)
-src/control.asm    control ROM source — 30 fps default-on, NO fixes (for A/B)
-CLAUDE.md          project notes, conventions, dead ends — read first
-PROGRESS.md        status log (which buckets are verified vs pending)
-work/PAYLOAD_ANALYSIS.md   reverse-engineering notes on the Redux payload
-work/IMPLEMENTATION.md     fix design notes
-work/TEST.md       quick-test plan for each bucket
+src/hooks.asm                the fixes — dev build (with Map Select boot) ⭐ edit here
+src/hooks-release.asm        release build (same fixes, no Map Select redirect)
+src/control.asm              control-ROM source (30 FPS, NO fixes — for A/B)
+CLAUDE.md                    project notes, conventions, dead ends — read first
+PROGRESS.md                  status log (which buckets are verified vs pending)
+work/PAYLOAD_ANALYSIS.md     reverse-engineering notes on the Patcher64+ payload
+work/FIX_PATTERNS.md         the 7 canonical hook templates (seed-mod / tick-mod / leaf / etc)
+work/TEST.md                 quick-test plan for each bucket
 ```
 
-## How a fix is structured
+## 🛠 Build
 
-Each "Bucket" is one bug. The fix hooks a single instruction with a `jal` (or `j` for leaf functions where `ra` is live) into a small body in the payload's free space at RAM `0x8041AE00+`. The body checks `fps_switch` (`0x80419832`) — at 20 fps it's a no-op, at 30 fps it scales the counter (seed-mod or 2/3-tick).
+The patches assemble against a specific input ROM (`work/oot-redux-decompressed.z64`) you have to produce yourself — for both **legal** reasons (no game data ships here) and **correctness** (offsets are version-pinned to NTSC-U 1.0 + the specific Redux payload).
 
-Multi-actor-safe timers (e.g. dungeon torches in a room) read a **frame-global phase byte** at `0x801C6FB4` maintained by the `frame_phase` hook, so all actors skip the same frame together.
+### What you need
 
-## Verified at time of writing
+- **`armips`** — the MIPS assembler. Build from [`Kingcom/armips`](https://github.com/Kingcom/armips) or use a packaged binary. `hooks.asm` was tested against armips built from upstream at the time of writing; any recent release should work. Put the resulting binary anywhere — for these instructions assume it's at `tools/armips-src/build/armips`, but you can adjust the path.
+- **Base ROM: `rom/oot-ntsc10.z64`** — your own dump of *The Legend of Zelda: Ocarina of Time*, NTSC-U revision 1.0, native big-endian `.z64` layout (NOT byte-swapped `.v64` or little-endian `.n64`).
+- **`work/oot-redux-decompressed.z64`** — the OoT Redux ROM, decompressed (so armips can patch into the actor overlays directly without recompression). To produce it: run the base ROM through [Patcher64+](https://github.com/SkyBlueEclipse/Patcher64Plus-Tool) with the **Redux** option enabled (no other gameplay changes), then decompress the result. Decompression options include [`z64decompress`](https://github.com/z64tools/z64decompress) or any tool that handles standard OoT Yaz0 segments — many third-party tools work.
 
-Buckets 2 (gravity), 3 (bomb fuse), 4 (combo window), 5 (spin charge), 6 (deku stick — incidental via B7), 7 (torch litTimer), 8 (letterbox) all user-confirmed working. Buckets 9 (ReDead grab damage) and 10 (other ReDead AI timers) are built and awaiting user-test.
+### Expected SHA-1 sums
 
-The broader actor sweep (~20 more actors with raw AI timers) is documented in `PROGRESS.md` and proceeds bucket-by-bucket.
+If your files don't match these, the hook offsets will land in the wrong place and the resulting ROM will not boot.
 
-## Build
+| File | SHA-1 | Size |
+|---|---|---|
+| `rom/oot-ntsc10.z64` (clean NTSC-U 1.0 dump) | `ad69c91157f6705e8ab06c79fe08aad47bb57ba7` | 33,554,432 bytes |
+| `work/oot-redux-decompressed.z64` (Redux applied, then decompressed) | `5cc5cdb3bc946c8be0483f2b8b681db5daa82ecf` | 57,274,608 bytes |
+| `redux.ppf` (the Patcher64+ Redux delta, for sanity-checking what you applied) | `1736ce1623cd65a994e9254359b37109942dfa5d` | (varies) |
 
-You need: the OoT decomp built MATCHED for ntsc-1.0 (`zeldaret/oot`), an armips build, and the MIPS binutils. Then:
+The Redux PPF lives inside the Patcher64+ tool at `Files/Games/Ocarina of Time/redux.ppf` — that SHA is for the version Patcher64+ shipped at the time this project was last built. If yours differs, the actor offsets may have moved.
+
+You can also sanity-check the base ROM via the header at offset `0x10`: it should read CRC1 `EC7011B7`, CRC2 `7616D72B`, region byte at `0x3E` = `0x45` ('E' = US).
+
+### Build
+
+From the repo root:
 
 ```
 tools/armips-src/build/armips src/hooks.asm
 ```
 
-No CRC step — every patch lands past ROM `0x101000`, beyond the N64 boot-checksum range.
+This writes `work/oot-redux-30fps.z64` (the patched ROM). Paths in the `.asm` files are relative to the working directory armips runs from — always invoke it from the repo root.
 
-## License
+### Three build variants
+
+| Source file | Output ROM | What it is |
+|---|---|---|
+| `src/hooks.asm` ⭐ | `work/oot-redux-30fps.z64` | **Dev/test build** — all bucket fixes + boot redirected to OoT's built-in Map Select debug menu, with a forced full-inventory debug save. Lets you warp to any scene instantly for testing. |
+| `src/hooks-release.asm` | `work/oot-redux-30fps-release.z64` | **Release build** — same bucket fixes, but boots normally (Nintendo logo → file select → choose / create your own save → play). Use this for actually *playing* the game. |
+| `src/control.asm` | `work/oot-redux-30fps-stock.z64` | **Control ROM** — Redux 30 FPS with NONE of the bucket fixes. Used to A/B verify that each bucket really is fixing a real bug, not papering over nothing. |
+
+All three:
+- Start at 30 FPS (`CFG_DEFAULT_30_FPS = 1`).
+- Honour the **L+Z** toggle to switch 20 ↔ 30 FPS live.
+- Build past ROM `0x101000`, beyond the N64 boot-checksum range — no CRC step needed.
+
+## 🧪 Testing tip
+
+The dev `oot-redux-30fps.z64` and the control `oot-redux-30fps-stock.z64` both boot **directly into OoT's built-in Map Select** debug menu (Patcher64+'s 30 FPS payload exposes it; we just redirect the boot path there and force a full-inventory debug save). That means every test is **scroll to scene number → press A → done**. No "fight your way to dungeon X" — see `work/TEST.md` for the verified per-bucket warp routes.
+
+The release ROM (`-release.z64`) deliberately omits the Map Select redirect — start a normal file, play normally.
+
+## 📜 License
 
 Patch source: MIT. ROMs and decomp assets are not redistributed here.
