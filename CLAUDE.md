@@ -28,8 +28,9 @@ tools/                            ppf_*.py, disasm.py, analyze.py,
                                   armips-src/ + mips-toolchain/ (built)
 ```
 Other docs: `PROGRESS.md` (status log), `work/PAYLOAD_ANALYSIS.md` (how the
-30fps patch works), `work/IMPLEMENTATION.md` (addresses + fix design),
-`work/TEST.md` (quick-test steps).
+30fps patch works), `work/FIX_PATTERNS.md` (**the 7 canonical hook
+templates — classify any new actor against this list before writing the
+hook**), `work/TEST.md` (quick-test steps).
 
 ## Build
 1. Edit `src/hooks.asm`.
