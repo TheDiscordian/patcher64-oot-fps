@@ -276,6 +276,221 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 48: En_Ssh (Big Skulltula) + En_Skj (Skull Kid) timers — tick-mod ----
+; Two enemies bundled (13 + 4 sites):
+;   En_Ssh: huge Skulltula boss (Forest Temple etc) with 9 timer fields
+;   En_Skj: Skull Kid (Lost Woods / Sacred Forest Meadow / Forest Stage)
+;     with 3 timer fields
+
+ssh_stun_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_stun_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_stun_s0_t8_st
+    nop
+    addiu t8, t8, 1
+ssh_stun_s0_t8_st:
+    jr    ra
+    sh    t8, 0x522(s0)
+
+ssh_hit_s0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_hit_s0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_hit_s0_t6_st
+    nop
+    addiu t6, t6, 1
+ssh_hit_s0_t6_st:
+    jr    ra
+    sh    t6, 0x51C(s0)
+
+ssh_spin_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_spin_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_spin_s0_t7_st
+    nop
+    addiu t7, t7, 1
+ssh_spin_s0_t7_st:
+    jr    ra
+    sh    t7, 0x51A(s0)
+
+ssh_sway_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_sway_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_sway_s0_t8_st
+    nop
+    addiu t8, t8, 1
+ssh_sway_s0_t8_st:
+    jr    ra
+    sh    t8, 0x526(s0)
+
+ssh_inv_a3_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_inv_a3_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_inv_a3_t8_st
+    nop
+    addiu t8, t8, 1
+ssh_inv_a3_t8_st:
+    jr    ra
+    sh    t8, 0x51E(a3)
+
+ssh_unk_a3_t4:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_unk_a3_t4_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_unk_a3_t4_st
+    nop
+    addiu t4, t4, 1
+ssh_unk_a3_t4_st:
+    jr    ra
+    sh    t4, 0x518(a3)
+
+ssh_anim_a3_t5:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_anim_a3_t5_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_anim_a3_t5_st
+    nop
+    addiu t5, t5, 1
+ssh_anim_a3_t5_st:
+    jr    ra
+    sh    t5, 0x524(a3)
+
+ssh_sfx_a3_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_sfx_a3_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_sfx_a3_t6_st
+    nop
+    addiu t6, t6, 1
+ssh_sfx_a3_t6_st:
+    jr    ra
+    sh    t6, 0x520(a3)
+
+ssh_unk_s0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_unk_s0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_unk_s0_t6_st
+    nop
+    addiu t6, t6, 1
+ssh_unk_s0_t6_st:
+    jr    ra
+    sh    t6, 0x518(s0)
+
+ssh_anim_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_anim_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_anim_s0_t7_st
+    nop
+    addiu t7, t7, 1
+ssh_anim_s0_t7_st:
+    jr    ra
+    sh    t7, 0x524(s0)
+
+ssh_sfx_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_sfx_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_sfx_s0_t7_st
+    nop
+    addiu t7, t7, 1
+ssh_sfx_s0_t7_st:
+    jr    ra
+    sh    t7, 0x520(s0)
+
+ssh_blink_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_blink_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_blink_s0_t8_st
+    nop
+    addiu t8, t8, 1
+ssh_blink_s0_t8_st:
+    jr    ra
+    sh    t8, 0x5C0(s0)
+
+ssh_multi_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_multi_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_multi_s0_t8_st
+    nop
+    addiu t8, t8, 1
+ssh_multi_s0_t8_st:
+    jr    ra
+    sh    t8, 0x2BA(s0)
+
+ssh_needle_s0_t9:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_needle_s0_t9_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_needle_s0_t9_st
+    nop
+    addiu t9, t9, 1
+ssh_needle_s0_t9_st:
+    jr    ra
+    sh    t9, 0x2BC(s0)
+
+ssh_dodge_s0_t0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_dodge_s0_t0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_dodge_s0_t0_st
+    nop
+    addiu t0, t0, 1
+ssh_dodge_s0_t0_st:
+    jr    ra
+    sh    t0, 0x2BE(s0)
+
+ssh_multi_s0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ssh_multi_s0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ssh_multi_s0_t6_st
+    nop
+    addiu t6, t6, 1
+ssh_multi_s0_t6_st:
+    jr    ra
+    sh    t6, 0x2BA(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +553,44 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 48 injections ----
+.headersize 0x80B25590 - 0x00EA0CC0            ; ovl_En_Ssh
+.org 0x80B25E40
+    jal   ssh_stun_s0_t8
+.org 0x80B25EE4
+    jal   ssh_hit_s0_t6
+.org 0x80B25EFC
+    jal   ssh_spin_s0_t7
+.org 0x80B26264
+    jal   ssh_sway_s0_t8
+.org 0x80B26A4C
+    jal   ssh_inv_a3_t8
+.org 0x80B26E00
+    jal   ssh_unk_a3_t4
+.org 0x80B26E3C
+    jal   ssh_anim_a3_t5
+.org 0x80B26EB4
+    jal   ssh_sfx_a3_t6
+.org 0x80B27008
+    jal   ssh_unk_s0_t6
+.org 0x80B2703C
+    jal   ssh_anim_s0_t7
+.org 0x80B270F0
+    jal   ssh_unk_s0_t6
+.org 0x80B2718C
+    jal   ssh_sfx_s0_t7
+.org 0x80B2747C
+    jal   ssh_blink_s0_t8
+.headersize 0x80A6CA90 - 0x00DEF3E0            ; ovl_En_Skj
+.org 0x80A6EF58
+    jal   ssh_multi_s0_t8
+.org 0x80A6EF6C
+    jal   ssh_needle_s0_t9
+.org 0x80A6EF7C
+    jal   ssh_dodge_s0_t0
+.org 0x80A6F500
+    jal   ssh_multi_s0_t6
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
