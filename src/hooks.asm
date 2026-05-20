@@ -276,6 +276,173 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 64: En_Dnt_Jiji + En_Encount1 + En_Ex_Item + En_fHG — tick-mod ----
+; Four actors bundled (4+4+1+3 sites):
+;   En_Dnt_Jiji (Forest Stage scrub elder): timer, sfx, blink, unk
+;   En_Encount1 (encounter spawner type 1): outOfRange, fieldSpawn,
+;     master timer
+;   En_Ex_Item (sub-shop item carrier): timer (also chestKill +
+;     prizeRotate but they share offset in source)
+;   En_fHG (horseback-archery Ingo Ganondorf): gallop, hit, timers[5]
+;     loop body (Pattern E loop interception)
+
+dj_unk:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dj_unk_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dj_unk_st
+    nop
+    addiu t7, t7, -1
+dj_unk_st:
+    jr    ra
+    sh    t7, 0x236(s0)
+
+dj_t:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dj_t_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dj_t_st
+    nop
+    addiu t8, t8, 1
+dj_t_st:
+    jr    ra
+    sh    t8, 0x230(s0)
+
+dj_sfx:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dj_sfx_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dj_sfx_st
+    nop
+    addiu t9, t9, 1
+dj_sfx_st:
+    jr    ra
+    sh    t9, 0x232(s0)
+
+dj_blink:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dj_blink_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dj_blink_st
+    nop
+    addiu t0, t0, 1
+dj_blink_st:
+    jr    ra
+    sh    t0, 0x234(s0)
+
+enc1_oor_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, enc1_oor_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, enc1_oor_s0_st
+    nop
+    addiu t0, t0, -1
+enc1_oor_s0_st:
+    jr    ra
+    sh    t0, 0x14A(s0)
+
+enc1_oor_s1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, enc1_oor_s1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, enc1_oor_s1_st
+    nop
+    addiu t8, t8, -1
+enc1_oor_s1_st:
+    jr    ra
+    sh    t8, 0x14A(s1)
+
+enc1_fs:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, enc1_fs_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, enc1_fs_st
+    nop
+    addiu t4, t4, 1
+enc1_fs_st:
+    jr    ra
+    sh    t4, 0x14C(s1)
+
+enc1_t:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, enc1_t_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, enc1_t_st
+    nop
+    addiu t6, t6, 1
+enc1_t_st:
+    jr    ra
+    sh    t6, 0x154(a0)
+
+exi_t:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, exi_t_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, exi_t_st
+    nop
+    addiu t6, t6, 1
+exi_t_st:
+    jr    ra
+    sh    t6, 0x14A(a0)
+
+fhg_gallop:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fhg_gallop_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fhg_gallop_st
+    nop
+    addiu t8, t8, -1
+fhg_gallop_st:
+    jr    ra
+    sh    t8, 0x1B0(s0)
+
+fhg_loop:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fhg_loop_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fhg_loop_st
+    nop
+    addiu t1, t1, 1
+fhg_loop_st:
+    jr    ra
+    sh    t1, 0x1C4(v1)
+
+fhg_hit:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fhg_hit_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fhg_hit_st
+    nop
+    addiu t2, t2, 1
+fhg_hit_st:
+    jr    ra
+    sh    t2, 0x1CE(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +505,36 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 64 injections ----
+.headersize 0x80B4DC40 - 0x00EC9370            ; ovl_En_Dnt_Jiji
+.org 0x80B4ECE4
+    jal   dj_unk
+.org 0x80B4ECF0
+    jal   dj_t
+.org 0x80B4ED00
+    jal   dj_sfx
+.org 0x80B4ED10
+    jal   dj_blink
+.headersize 0x8096F4C0 - 0x00D0CB50            ; ovl_En_Encount1
+.org 0x8096F9C8
+    jal   enc1_oor_s0
+.org 0x8096FB84
+    jal   enc1_oor_s1
+.org 0x8096FC98
+    jal   enc1_fs
+.org 0x8096FF50
+    jal   enc1_t
+.headersize 0x80AD9430 - 0x00E59270            ; ovl_En_Ex_Item
+.org 0x80AD9F38
+    jal   exi_t
+.headersize 0x809108A0 - 0x00CAE020            ; ovl_En_fHG
+.org 0x80912A64
+    jal   fhg_gallop
+.org 0x80912A88
+    jal   fhg_loop
+.org 0x80912AB8
+    jal   fhg_hit
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
