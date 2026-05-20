@@ -403,6 +403,50 @@ am_done:
     jr    ra
     sh    zero, 0x254(s0)                      ; (delay slot) original unk_264=0
 
+; ---- B11 follow-up: same curFrame trajectory bug in 4 OTHER state functions ----
+; User report: lunge animation still humps the ground when Armos moves out of
+; range mid-attack. Trace: out-of-range lunge triggers EnAm_SetupRotateToHome
+; -> EnAm_RotateToHome -> EnAm_MoveToHome -> EnAm_RotateToInit -> EnAm_Sleep
+; (or Lunge -> Cooldown -> Lunge again). Every one of those state functions
+; uses the same `curFrame == 8.0f` strict-equality hop trigger, and the same
+; clamp-to-11 in-air branch. So the curFrame wrap that skips 8.0f on 30 fps
+; breaks ALL of them, not just EnAm_Lunge.
+;
+; Three of the four functions are safe to hook at their `velocity.y = 0.0f`
+; store in the landing-success branch (delay slot is an independent store).
+; EnAm_Cooldown is the exception: its delay slot is `jal SpawnEffects`,
+; and JAL-in-delay-slot is undefined on R4300. For Cooldown we hook the
+; `move $a0, $s0` two instructions earlier (preparing SpawnEffects's arg)
+; and restore that move in jr's delay slot.
+
+; Generic hook: curFrame=0 reset + restore `swc1 $fN, 0x60(s0)` (velocity.y = 0.0f).
+; The original instruction stores a float 0.0 from $fN; `sw zero, 0x60(s0)`
+; writes the same 32-bit pattern (IEEE 754 0.0 == integer 0), so it's safe
+; regardless of which $fN the compiler chose at each site.
+en_am_velY_reset:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, am_vy_done                       ; 20 fps -> just zero velocity.y
+    nop
+    sw    zero, 0x16C(s0)                      ; 30 fps -> curFrame = 0.0f too
+am_vy_done:
+    jr    ra
+    sw    zero, 0x60(s0)                       ; (delay slot) velocity.y = 0.0 (bit-equiv to original swc1)
+
+; Cooldown-specific hook: curFrame=0 reset + restore `or $a0, $s0, $zero`
+; (move $a0, $s0). Injection point sits 2 slots before the velocity.y store;
+; the JAL's delay slot becomes that original `swc1` so velocity.y=0 still
+; happens. SpawnEffects's $a0 = this is set in jr's delay slot.
+en_am_curframe_reset_cd:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, am_cd_done                       ; 20 fps -> just restore the move
+    nop
+    sw    zero, 0x16C(s0)                      ; 30 fps -> curFrame = 0.0f
+am_cd_done:
+    jr    ra
+    or    $a0, $s0, $zero                      ; (delay slot) original move $a0, $s0
+
 
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
@@ -481,10 +525,18 @@ am_done:
     jal   armos_ice_tick
 
 
-; ---- B11 Armos landing-curFrame-reset injection ----
+; ---- B11 Armos landing-curFrame-reset injections ----
 .headersize 0x808F9080 - 0x00C96840            ; ovl_En_Am
 .org 0x808FA350                                ; was sh zero,0x254(s0) in EnAm_Lunge landing branch
     jal   en_am_land_fix
+.org 0x808F9D48                                ; was swc1 $f16,0x60(s0) in EnAm_RotateToHome landing branch
+    jal   en_am_velY_reset
+.org 0x808F9E70                                ; was swc1 $f8,0x60(s0) in EnAm_RotateToInit landing branch
+    jal   en_am_velY_reset
+.org 0x808F9FC4                                ; was swc1 $f0,0x60(s0) in EnAm_MoveToHome landing branch
+    jal   en_am_velY_reset
+.org 0x808FA1E8                                ; was or $a0,$s0,$zero (move a0,s0) in EnAm_Cooldown landing branch
+    jal   en_am_curframe_reset_cd              ; (next slot, the swc1 fN,0x60(s0), runs as JAL delay -> velocity.y=0 still happens)
 
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
