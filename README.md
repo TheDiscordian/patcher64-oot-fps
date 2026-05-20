@@ -45,7 +45,6 @@ src/control.asm              control-ROM source (30 FPS, NO fixes — for A/B)
 CLAUDE.md                    project notes, conventions, dead ends — read first
 PROGRESS.md                  status log (which buckets are verified vs pending)
 work/PAYLOAD_ANALYSIS.md     reverse-engineering notes on the Patcher64+ payload
-work/IMPLEMENTATION.md       fix design notes
 work/TEST.md                 quick-test plan for each bucket
 ```
 

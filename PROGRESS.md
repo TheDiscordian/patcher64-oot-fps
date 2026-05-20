@@ -21,9 +21,27 @@ injected. Boot CRC at `0x10` (`93D30FBB`/`9FF3024D`) is unchanged from the base
 | Bucket 8 — letterbox draw     | ✅ VERIFIED (user) — also fixed the ocarina pull-out |
 | Bucket 9 — ReDead grab damage | ✅ VERIFIED (user 2026-05-19): "seem to be working well" |
 | Bucket 10 — ReDead AI timers  | ✅ VERIFIED (user 2026-05-19) — same test run |
+| Bucket 11 — Armos AI          | 🔨 BUILT (PR #1) — cooldown/attack/ricochet seed-mod, deathTimer/iceTimer tick-mod. Awaiting user-test. |
+| Bucket 12 — Boss_Goma patience| 🔨 BUILT (PR #6) — patienceTimer 200→300 seed-mod (two sites). |
+| Bucket 13 — Fire Temple elevator | 🔨 BUILT (PR #7) — Bg_Hidan_Syoku timer tick-mod (3 decrement sites share one hook). |
+| Bucket 14 — Forest falling block | 🔨 BUILT (PR #8) — Bg_Mori_Rakkatenjo timer tick-mod (s32 field). |
+| Bucket 15 — Arrow Trap        | 🔨 BUILT (PR #9) — En_Arow_Trap attackTimer 80→120 seed-mod (init + reseed). |
 | Minigame timers (HUD)         | ✅ payload runtime-patches the on-screen counter |
 | Minigame mechanics (actors)   | ❓ UNVERIFIED — actor sweep pending (181 candidates) |
-| Other enemies/bosses/traps    | ❓ SUSPECTED — actor sweep identified ~20 actors with raw AI timers, pending fix |
+| Other enemies/bosses/traps    | ❓ SUSPECTED — many actor candidates remain; see "Remaining" below |
+
+## Pre-existing Patcher64+ Redux 30 FPS bugs (NOT introduced by our patches)
+Caught by user A/B test against the stock control ROM during B11 review:
+- **Armos lunge "humps the ground"** — no forward motion during the hop animation.
+- **Armos death "one hop, then spins until exploding"** — multi-hop death sequence collapsed.
+
+Likely root cause: `EnAm_Lunge` has strict float-equality checks like
+`if (this->skelAnime.curFrame == 8.0f)` (z_en_am.c:620) gating velocity / speed
+setup. SkelAnime's per-tick step depends on R_UPDATE_RATE and playSpeed — at
+20 fps R_UPDATE_RATE=3 and the step lands on the expected integer frames, at
+30 fps R_UPDATE_RATE=2 and the step doesn't land on the same integers, so the
+equality check never fires. Same class of bug likely affects more enemies
+beyond Armos — investigation tracked separately.
 
 ## What was done
 1. Reverse-engineered the Redux payload — `work/PAYLOAD_ANALYSIS.md`.
@@ -119,24 +137,47 @@ Both fixed (Buckets 4 & 5), same family as Bucket 3.
   per-actor patches. Best test candidates: Iron Knuckle (slow telegraphed
   swings), ReDead (lunge cadence), Wolfos (Forest Temple courtyard).
 
-## Remaining
-- **Actor sweep — broader** — Bucket 9/10 covers ReDead fully (5 timers). An
-  agent-driven sweep (En_* enemies, Bg_* environment, Obj_/Boss_/Door_) flagged
-  ~20 additional actors with raw `timer--` patterns: En_Wf (Wolfos), En_Floormas,
-  En_Am (Armos), En_Po_Field (Poe sister), En_Dekubaba, En_Bb (Blue Bubble),
-  En_Bili (Electric Bubble), En_Anubice, En_Dha (Dead Hand), En_Goma, En_St,
-  En_Vali, En_Rr; Boss_Sst (Bongo Bongo — 11 state-machine timers), Boss_Goma
-  patienceTimer, Boss_Mo playerHitTimer; Bg_Hidan_Syoku (fire elevator),
-  Bg_Haka_Gate (truth spinner), Bg_Haka_Trap (Shadow temple traps),
-  Bg_Mori_Rakkatenjo (falling ceiling); Obj_Ice_Poly (freeze duration),
-  Obj_Switch, Door_Killer; Arrow_Fire/Ice/Light (explosion visuals).
-  
-  Fix complexity varies: some are simple fixed-`li` seeds (seed-mod, like B9/B10),
-  some use `Rand_ZeroOne()` for the seed (would need float-multiplier patches),
-  some have intermediate `timer == N` checks (need tick-mod at the decrement site,
-  not seed-mod). Plan: ship Bucket 9/10 first, user-test, then iterate on the
-  rest in order of gameplay impact.
-- Fork the repo to user's GitHub (workflow improvement — branches/commits).
+## Remaining actor candidates
+
+Buckets 9-15 land ReDead, Armos, Boss_Goma, Bg_Hidan_Syoku, Bg_Mori_Rakkatenjo,
+and En_Arow_Trap. Still queued from the agent-driven sweep:
+
+| Actor / class | Notes |
+|---|---|
+| En_Wf (Wolfos) | Forest Temple. Multiple Rand_ZeroOne seeds — needs tick-mod across many sites. Complex. |
+| En_Floormas (Floormaster) | Forest Temple + Bottom of Well. ~7 fixed seeds, threshold checks on `actionTimer`. |
+| En_Po_Field (Poe sister) | Forest Temple. 6 timers, multiple state seeds. |
+| En_Dekubaba | Deku Tree. Many `== N` threshold checks (== 11, == 18, == 25, == 26) — tick-mod required. |
+| En_Bb / En_Bili (Blue / Electric Bubble) | Common dungeon enemies. Multiple timers for float/approach/discharge. |
+| En_Anubice (Anubis, Spirit Temple) | 2 timers (deathTimer, knockbackTimer). Simple seed-mod likely. |
+| En_Dha (Dead Hand) | Bottom of Well boss. 2 timers. |
+| En_Goma (Gohma Larva) | Spider larva from Gohma battle. 1 timer. |
+| En_St (Skulltula) | Common dungeon enemy. 7 timers (sfx, swayer, gaveDamageSpin, etc). Mix of cosmetic + gameplay. |
+| En_Vali (Bari) | Jellyfish enemy. 6 timers. |
+| En_Rr (Like-Like) | Eats Link's items. 2 timers. |
+| Boss_Sst (Bongo Bongo) | Shadow Temple boss. 11 state-machine timers — critical for fight cadence. |
+| Boss_Mo (Morpha) | Water Temple boss. playerHitTimer + baseBubblesTimer. Subtle (5-frame, 20-frame). |
+| Bg_Haka_Gate (truth spinner) | Shadow Temple. 60-frame floor-open delays. |
+| Bg_Haka_Trap (shadow temple traps) | Guillotine + spike crusher + spiked walls + fan blade — 11 timer-stores across 5 trap types. Complex classification. |
+| Obj_Ice_Poly (frozen enemy ice) | Visual scale formula uses meltTimer value — needs tick-mod (similar to B11 iceTimer). |
+| Obj_Switch | releaseTimer / cooldownTimer / disableAcTimer. |
+| Door_Killer (trap doors) | 5 timer-decrements gate door spin / wait / rise / fall / wobble. |
+| Arrow_Fire / Ice / Light | Explosion-visual timer (32 frames). Scale formula `(timer - 8) / 24` — tick-mod required. Three near-identical actors, one PR. |
+| Minigame actors (En_Syateki_*, En_Bom_Bowl_*, fishing, archery) | Per-actor target/projectile/AI timers — untouched audit needed. |
+
+Fix-pattern guidance (see CLAUDE.md): use **seed-mod** when the field is only
+checked `== 0` / `!= 0`. Use **tick-mod** (skip 1/3 of decrements via the
+frame_phase byte at `0x801C6FB4`) when the field has intermediate threshold
+checks (`< N`, `% N`, `>> N`) — otherwise seed-mod shifts the value distribution
+and breaks those comparisons.
+
+## Other open investigations
+- **Stock 30 fps SkelAnime curFrame strict-equality bug** — Armos lunge / death
+  multi-hop behaviour is broken on stock Patcher64+ Redux 30 fps. Most likely
+  cause: strict float-equality checks like `if (curFrame == 8.0f)` that fail
+  when the SkelAnime step at 30 fps lands on different integer multiples than
+  at 20 fps. Potentially a generic fix in the animation system, or per-actor
+  curFrame-check relaxation. (Detail in PR #1 body.)
 
 ## B2 — gravity (thrown objects)
 The 30 fps gravity bug is REAL for thrown objects — user A/B-confirmed: without
