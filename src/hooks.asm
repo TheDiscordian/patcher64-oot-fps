@@ -276,6 +276,41 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 36: En_Gb (Poe Seller) AI timers — tick-mod ----
+; Poe Seller NPC in the Kakariko house. frameTimer (++) drives the
+; caged-soul texture scroll formula: (timerMultiplier * frameTimer) %
+; 512 — at stock 30 fps the texture scrolls 1.5x too fast and the
+; mod-512 cycle hits at the wrong rhythm. actionTimer (--) gates the
+; idle head-turn cycle (seeded with Rand_ZeroFloat(100..700)).
+; Tick-mod via Pattern E preserves both. 2 sites, 2 hook variants.
+
+gb_action:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, gb_action_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, gb_action_store
+    nop
+    addiu t8, t8, 1                            ; phase 0 -> undo
+gb_action_store:
+    jr    ra
+    sh    t8, 0x372(s0)                       ; (delay slot) original sh
+
+gb_frame:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, gb_frame_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, gb_frame_store
+    nop
+    addiu t7, t7, -1                            ; phase 0 -> undo
+gb_frame_store:
+    jr    ra
+    sh    t7, 0x370(s2)                       ; (delay slot) original sh
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +373,13 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 36 injections ----
+.headersize 0x80B6A940 - 0x00EE6060            ; ovl_En_Gb
+.org 0x80B6B040                                ; was sh t8,0x372(s0) (--)
+    jal   gb_action
+.org 0x80B6B590                                ; was sh t7,0x370(s2) (++)
+    jal   gb_frame
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
