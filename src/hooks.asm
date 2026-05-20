@@ -276,6 +276,37 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Debug-save playerName init wrapper ----
+; Retail NTSC 1.0's Sram_InitDebugSave assigns the Japanese-encoded name
+;   { 0x81, 0x87, 0x61, 0xDF, 0xDF, 0xDF, 0xDF, 0xDF }   (=リンク     )
+; into gSaveContext.save.info.playerData.playerName. The NTSC English message
+; engine substitutes that 8-byte buffer wherever an NPC's dialogue uses the
+; name token (\xB2) — e.g. Darunia, the imprisoned Gorons in Fire Temple,
+; Saria, etc. The bytes 0x81/0x87/0x61 are valid indices into the JP font
+; but undefined in the English Font_LoadOrderedFont set, producing garbage
+; glyphs or a crash depending on font alignment.
+;
+; Wrap every callsite of Sram_InitDebugSave with this stub: call the
+; original, then overwrite playerName with NTSC English "LINK    " before
+; any message renders. Two callsites are redirected below.
+sram_init_w_name:
+    addiu sp, sp, -0x10
+    sw    ra, 0x0C(sp)
+    jal   0x800900EC                           ; original Sram_InitDebugSave
+    nop
+    lui   t0, 0x8011
+    ori   t0, t0, 0xA5F4                       ; &gSaveContext.save.info.playerData.playerName
+    lui   t1, 0xB6B3                           ; "LI" (FILENAME_UPPERCASE: 0xB6, 0xB3)
+    ori   t1, t1, 0xB8B5                       ; "NK" (FILENAME_UPPERCASE: 0xB8, 0xB5)
+    sw    t1, 0(t0)
+    lui   t1, 0xDFDF                           ; "  " (FILENAME_SPACE)
+    ori   t1, t1, 0xDFDF                       ; "  "
+    sw    t1, 4(t0)
+    lw    ra, 0x0C(sp)
+    addiu sp, sp, 0x10
+    jr    ra
+    nop
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -342,9 +373,11 @@ sgs_store:
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
 ; build the debug save -> File 1/2/3 are full-inventory saves.
+; Calls the playerName wrapper (above) instead of raw Sram_InitDebugSave so
+; the name buffer holds NTSC English "LINK    " before any NPC dialogue runs.
 .headersize 0x800110A0 - 0x00A87000
 .org 0x800908EC
-    jal   0x800900EC                           ; Sram_InitDebugSave
+    jal   sram_init_w_name                     ; was `jal 0x800900EC`
 
 ; ---- FAST-TEST: boot straight into Map Select (warp to any scene) ----
 ; Setup_InitImpl's SET_NEXT_GAMESTATE(ConsoleLogo_Init, ConsoleLogoState) is
@@ -359,8 +392,12 @@ sgs_store:
 
 ; MapSelect_LoadGame builds the debug save only if fileNum==0xFF; a cold boot
 ; zeroes fileNum, so force `lw t6,fileNum` to load 0xFF -> every warp gets it.
+; Also redirect the in-function `jal Sram_InitDebugSave` to the playerName
+; wrapper so every warp leaves playerName as NTSC English "LINK    ".
 .headersize 0x808009F8 - 0x00B9E438
 .org 0x808009F8                                ; was `lw t6,0x1354(v0)`
     addiu t6, zero, 0xFF
+.org 0x80800A08                                ; was `jal 0x800900EC` (Sram_InitDebugSave)
+    jal   sram_init_w_name
 
 .close
