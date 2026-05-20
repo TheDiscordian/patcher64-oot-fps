@@ -276,6 +276,34 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 16: Anubis (En_Anubice) deathTimer + knockbackTimer ----
+; Spirit Temple's fire-flame ghost enemy. Two timers, both with only `== 0`
+; checks, so seed-mod is sound.
+;   deathTimer (s16 @ 0x24A header /* 0x25A */): seed 20 -> 30
+;   knockbackTimer (s16 @ 0x24C header /* 0x25C */): seed 10 -> 15
+; Both seed-`li` instructions are followed (a few instructions later) by their
+; sh stores — no immediate delay-slot collision. Plain seed-mod on the `li`.
+
+anubice_death_seed:                            ; replaces li t7,20 at 0x809EC388
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, ade_done                         ; 20 fps -> keep t7 = 20
+    li    t7, 20                               ; (delay slot)
+    li    t7, 30                               ; 30 fps -> 20 * 1.5
+ade_done:
+    jr    ra
+    nop
+
+anubice_knockback_seed:                        ; replaces li t9,10 at 0x809EC834
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, akb_done                         ; 20 fps -> keep t9 = 10
+    li    t9, 10                               ; (delay slot)
+    li    t9, 15                               ; 30 fps -> 10 * 1.5
+akb_done:
+    jr    ra
+    nop
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +366,13 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 16 — ovl_En_Anubice (Anubis: Spirit Temple fire-flame ghost)
+.headersize 0x809EBB40 - 0x00D79240
+.org 0x809EC388                                ; was `li t7,20` (deathTimer=20 seed)
+    jal   anubice_death_seed
+.org 0x809EC834                                ; was `li t9,10` (knockbackTimer=10 seed)
+    jal   anubice_knockback_seed
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
