@@ -276,6 +276,40 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+
+; ---- Bucket 31: Arrow_Fire/Ice/Light timer — tick-mod ----
+; Magic arrow effects (Fire/Ice/Light). Each has a single u16 `timer` field
+; that drives the explosion fade-in/fade-out: scale = (timer-8)/24,
+; alpha = (timer * 0x23) - 0x118. Strict value-keyed: tick-mod required.
+; Three actors, one decrement site each, same (reg=t6, base=a0) pattern.
+; Two hook variants needed: Fire at offset 0x156, Ice/Light at offset 0x13E.
+
+arrow_t_a0_t6_156:                          ; Arrow_Fire
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, arrow_t_a0_t6_156_store
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; frame phase
+    bnez  t2, arrow_t_a0_t6_156_store
+    nop
+    addiu t6, t6, 1                            ; phase 0 -> undo decrement
+arrow_t_a0_t6_156_store:
+    jr    ra
+    sh    t6, 0x156(a0)                        ; (delay slot) original sh
+
+arrow_t_a0_t6_13e:                          ; Arrow_Ice + Arrow_Light
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)
+    beqz  t2, arrow_t_a0_t6_13e_store
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)
+    bnez  t2, arrow_t_a0_t6_13e_store
+    nop
+    addiu t6, t6, 1
+arrow_t_a0_t6_13e_store:
+    jr    ra
+    sh    t6, 0x13E(a0)
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +372,20 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+
+; ---- Bucket 31 injections ----
+.headersize 0x80A5E890 - 0x00DE12D0            ; ovl_Arrow_Fire
+.org 0x80A5EB1C                                ; was sh t6,0x156(a0)
+    jal   arrow_t_a0_t6_156
+
+.headersize 0x80A60750 - 0x00DE3190            ; ovl_Arrow_Ice
+.org 0x80A609DC                                ; was sh t6,0x13E(a0)
+    jal   arrow_t_a0_t6_13e
+
+.headersize 0x80A62630 - 0x00DE5070            ; ovl_Arrow_Light
+.org 0x80A628BC                                ; was sh t6,0x13E(a0)
+    jal   arrow_t_a0_t6_13e
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
