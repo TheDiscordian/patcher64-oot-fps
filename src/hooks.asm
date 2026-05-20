@@ -276,6 +276,453 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 62: NPC batch 4: Talon + Frog + Bombchu Bowl + Ge2 + Ossan + Zl4 — tick-mod ----
+; Uses `at` as scratch register instead of `v0` because some hooks
+; have v0 as the data register (En_Ta blink, En_Ossan blink).
+
+ta_blink1:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, ta_blink1_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, ta_blink1_st
+    nop
+    addiu v0, v0, 1
+ta_blink1_st:
+    jr    ra
+    sh    v0, 0x2A6(a0)
+
+ta_blink2:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, ta_blink2_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, ta_blink2_st
+    nop
+    addiu v0, v0, 1
+ta_blink2_st:
+    jr    ra
+    sh    v0, 0x2A6(a0)
+
+ta_nodOff:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, ta_nodOff_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, ta_nodOff_st
+    nop
+    addiu t6, t6, 1
+ta_nodOff_st:
+    jr    ra
+    sh    t6, 0x2D2(s0)
+
+ta_t:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, ta_t_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, ta_t_st
+    nop
+    addiu t9, t9, 1
+ta_t_st:
+    jr    ra
+    sh    t9, 0x2BC(s0)
+
+fr_blink1:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, fr_blink1_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, fr_blink1_st
+    nop
+    addiu t6, t6, 1
+fr_blink1_st:
+    jr    ra
+    sw    t6, 0x360(a0)
+
+fr_blink2:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, fr_blink2_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, fr_blink2_st
+    nop
+    addiu t6, t6, 1
+fr_blink2_st:
+    jr    ra
+    sw    t6, 0x360(a0)
+
+fr_jumpC_s0:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, fr_jumpC_s0_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, fr_jumpC_s0_st
+    nop
+    addiu t7, t7, -1
+fr_jumpC_s0_st:
+    jr    ra
+    sw    t7, 0x35C(s0)
+
+fr_frogSong1:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, fr_frogSong1_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, fr_frogSong1_st
+    nop
+    addiu t6, t6, 1
+fr_frogSong1_st:
+    jr    ra
+    sh    t6, 0x376(s0)
+
+fr_frogSong2:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, fr_frogSong2_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, fr_frogSong2_st
+    nop
+    addiu t6, t6, 1
+fr_frogSong2_st:
+    jr    ra
+    sh    t6, 0x376(s0)
+
+fr_jumpC_a0:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, fr_jumpC_a0_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, fr_jumpC_a0_st
+    nop
+    addiu t7, t7, -1
+fr_jumpC_a0_st:
+    jr    ra
+    sw    t7, 0x35C(a0)
+
+bb_t:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, bb_t_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, bb_t_st
+    nop
+    addiu t7, t7, -1
+bb_t_st:
+    jr    ra
+    sh    t7, 0x21C(s0)
+
+bb_prizeRev:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, bb_prizeRev_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, bb_prizeRev_st
+    nop
+    addiu t5, t5, 1
+bb_prizeRev_st:
+    jr    ra
+    sh    t5, 0x21A(s0)
+
+bb_blink:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, bb_blink_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, bb_blink_st
+    nop
+    addiu t6, t6, 1
+bb_blink_st:
+    jr    ra
+    sh    t6, 0x226(s0)
+
+ge2_t_a0:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, ge2_t_a0_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, ge2_t_a0_st
+    nop
+    addiu t6, t6, 1
+ge2_t_a0_st:
+    jr    ra
+    sb    t6, 0x2F5(a0)
+
+ge2_t_s0:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, ge2_t_s0_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, ge2_t_s0_st
+    nop
+    addiu t8, t8, 1
+ge2_t_s0_st:
+    jr    ra
+    sb    t8, 0x2F5(s0)
+
+ge2_walk:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, ge2_walk_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, ge2_walk_st
+    nop
+    addiu t2, t2, -1
+ge2_walk_st:
+    jr    ra
+    sh    t2, 0x2F2(s0)
+
+ge2_blink:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, ge2_blink_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, ge2_blink_st
+    nop
+    addiu t6, t6, 1
+ge2_blink_st:
+    jr    ra
+    sh    t6, 0x2D6(a2)
+
+oss_delay1:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, oss_delay1_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, oss_delay1_st
+    nop
+    addiu t8, t8, 1
+oss_delay1_st:
+    jr    ra
+    sh    t8, 0x1D6(s0)
+
+oss_delay2:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, oss_delay2_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, oss_delay2_st
+    nop
+    addiu t8, t8, 1
+oss_delay2_st:
+    jr    ra
+    sh    t8, 0x1D6(s0)
+
+oss_blink1:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, oss_blink1_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, oss_blink1_st
+    nop
+    addiu v0, v0, 1
+oss_blink1_st:
+    jr    ra
+    sh    v0, 0x1E4(a0)
+
+oss_blink2:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, oss_blink2_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, oss_blink2_st
+    nop
+    addiu v0, v0, 1
+oss_blink2_st:
+    jr    ra
+    sh    v0, 0x1E4(a0)
+
+oss_t:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, oss_t_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, oss_t_st
+    nop
+    addiu t7, t7, -1
+oss_t_st:
+    jr    ra
+    sh    t7, 0x1D4(a0)
+
+zl_blink:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, zl_blink_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, zl_blink_st
+    nop
+    addiu t6, t6, 1
+zl_blink_st:
+    jr    ra
+    sh    t6, 0x200(a2)
+
+zl_talk2_s0_t3a:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, zl_talk2_s0_t3a_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, zl_talk2_s0_t3a_st
+    nop
+    addiu t3, t3, -1
+zl_talk2_s0_t3a_st:
+    jr    ra
+    sh    t3, 0x204(s0)
+
+zl_talk2_s0_t1a:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, zl_talk2_s0_t1a_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, zl_talk2_s0_t1a_st
+    nop
+    addiu t1, t1, -1
+zl_talk2_s0_t1a_st:
+    jr    ra
+    sh    t1, 0x204(s0)
+
+zl_talk1_s0_t2:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, zl_talk1_s0_t2_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, zl_talk1_s0_t2_st
+    nop
+    addiu t2, t2, 1
+zl_talk1_s0_t2_st:
+    jr    ra
+    sh    t2, 0x202(s0)
+
+zl_talk2_s0_t3b:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, zl_talk2_s0_t3b_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, zl_talk2_s0_t3b_st
+    nop
+    addiu t3, t3, -1
+zl_talk2_s0_t3b_st:
+    jr    ra
+    sh    t3, 0x204(s0)
+
+zl_talk1_s0_t0:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, zl_talk1_s0_t0_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, zl_talk1_s0_t0_st
+    nop
+    addiu t0, t0, 1
+zl_talk1_s0_t0_st:
+    jr    ra
+    sh    t0, 0x202(s0)
+
+zl_talk2_s0_t4:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, zl_talk2_s0_t4_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, zl_talk2_s0_t4_st
+    nop
+    addiu t4, t4, -1
+zl_talk2_s0_t4_st:
+    jr    ra
+    sh    t4, 0x204(s0)
+
+zl_talk2_s0_t2a:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, zl_talk2_s0_t2a_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, zl_talk2_s0_t2a_st
+    nop
+    addiu t2, t2, -1
+zl_talk2_s0_t2a_st:
+    jr    ra
+    sh    t2, 0x204(s0)
+
+zl_talk2_s1_t1:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, zl_talk2_s1_t1_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, zl_talk2_s1_t1_st
+    nop
+    addiu t1, t1, -1
+zl_talk2_s1_t1_st:
+    jr    ra
+    sh    t1, 0x204(s1)
+
+zl_talk2_s0_t3c:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, zl_talk2_s0_t3c_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, zl_talk2_s0_t3c_st
+    nop
+    addiu t3, t3, -1
+zl_talk2_s0_t3c_st:
+    jr    ra
+    sh    t3, 0x204(s0)
+
+zl_talk2_s0_t1b:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, zl_talk2_s0_t1b_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, zl_talk2_s0_t1b_st
+    nop
+    addiu t1, t1, -1
+zl_talk2_s0_t1b_st:
+    jr    ra
+    sh    t1, 0x204(s0)
+
+zl_talk2_s0_t1c:
+    lui   at, 0x8042
+    lbu   at, -0x67CE(at)
+    beqz  at, zl_talk2_s0_t1c_st
+    lui   at, 0x801C
+    lbu   at, 0x6FB4(at)
+    bnez  at, zl_talk2_s0_t1c_st
+    nop
+    addiu t1, t1, -1
+zl_talk2_s0_t1c_st:
+    jr    ra
+    sh    t1, 0x204(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +785,82 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 62 injections ----
+.headersize 0x80921830 - 0x00CBEFA0            ; ovl_En_Ta
+.org 0x809244A4
+    jal   ta_blink1
+.org 0x809244D8
+    jal   ta_blink2
+.org 0x8092462C
+    jal   ta_nodOff
+.org 0x809248B8
+    jal   ta_t
+.headersize 0x80A25980 - 0x00DAF4B0            ; ovl_En_Fr
+.org 0x80A260D4
+    jal   fr_blink1
+.org 0x80A260FC
+    jal   fr_blink2
+.org 0x80A26AAC
+    jal   fr_jumpC_s0
+.org 0x80A273A0
+    jal   fr_frogSong1
+.org 0x80A27528
+    jal   fr_frogSong2
+.org 0x80A27A98
+    jal   fr_jumpC_a0
+.headersize 0x80AAD470 - 0x00E2D2C0            ; ovl_En_Bom_Bowl_Man
+.org 0x80AAE50C
+    jal   bb_t
+.org 0x80AAE61C
+    jal   bb_prizeRev
+.org 0x80AAE62C
+    jal   bb_blink
+.headersize 0x80B239A0 - 0x00E9F0D0            ; ovl_En_Ge2
+.org 0x80B23EAC
+    jal   ge2_t_a0
+.org 0x80B23FE4
+    jal   ge2_t_s0
+.org 0x80B24478
+    jal   ge2_walk
+.org 0x80B24AB4
+    jal   ge2_blink
+.headersize 0x808CED80 - 0x00C6C5E0            ; ovl_En_Ossan
+.org 0x808D0A14
+    jal   oss_delay1
+.org 0x808D0BD4
+    jal   oss_delay2
+.org 0x808D28F0
+    jal   oss_blink1
+.org 0x808D2924
+    jal   oss_blink2
+.org 0x808D3418
+    jal   oss_t
+.headersize 0x80B80CF0 - 0x00EFC410            ; ovl_En_Zl4
+.org 0x80B80F48
+    jal   zl_blink
+.org 0x80B81858
+    jal   zl_talk2_s0_t3a
+.org 0x80B818EC
+    jal   zl_talk2_s0_t1a
+.org 0x80B81A7C
+    jal   zl_talk1_s0_t2
+.org 0x80B820D8
+    jal   zl_talk2_s0_t3b
+.org 0x80B8228C
+    jal   zl_talk1_s0_t0
+.org 0x80B823C4
+    jal   zl_talk2_s0_t4
+.org 0x80B8243C
+    jal   zl_talk2_s0_t2a
+.org 0x80B82524
+    jal   zl_talk2_s1_t1
+.org 0x80B82C64
+    jal   zl_talk2_s0_t3c
+.org 0x80B82CF0
+    jal   zl_talk2_s0_t1b
+.org 0x80B830BC
+    jal   zl_talk2_s0_t1c
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
