@@ -276,6 +276,132 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 56: En_Ms + En_Bird + En_Ko + En_Mk + En_Ge1 — tick-mod ----
+; Five NPC-ish actors bundled (1+2+1+3+4 sites):
+;   En_Ms (Beanstalk lady?): activeTimer
+;   En_Bird (Hyrule Field bird): timer (s32)
+;   En_Ko (Kokiri child): blinkTimer
+;   En_Mk (Lake Hylia scientist): timer
+;   En_Ge1 (Gerudo NPC - white): blinkTimer + cutsceneTimer x3 sites
+
+ms_act:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ms_act_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ms_act_st
+    nop
+    addiu t7, t7, -1
+ms_act_st:
+    jr    ra
+    sh    t7, 0x23C(s0)
+
+bd_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bd_t1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bd_t1_st
+    nop
+    addiu t8, t8, 1
+bd_t1_st:
+    jr    ra
+    sw    t8, 0x188(s0)
+
+bd_t2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bd_t2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bd_t2_st
+    nop
+    addiu t5, t5, 1
+bd_t2_st:
+    jr    ra
+    sw    t5, 0x188(s0)
+
+ko_b:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ko_b_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ko_b_st
+    nop
+    addiu t6, t6, 1
+ko_b_st:
+    jr    ra
+    sh    t6, 0x204(a2)
+
+mk_t_a2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mk_t_a2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mk_t_a2_st
+    nop
+    addiu t6, t6, 1
+mk_t_a2_st:
+    jr    ra
+    sh    t6, 0x272(a2)
+
+mk_t_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mk_t_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mk_t_s0_st
+    nop
+    addiu t6, t6, 1
+mk_t_s0_st:
+    jr    ra
+    sh    t6, 0x272(s0)
+
+ge1_cs_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ge1_cs_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ge1_cs_t8_st
+    nop
+    addiu t8, t8, 1
+ge1_cs_t8_st:
+    jr    ra
+    sb    t8, 0x29F(a0)
+
+ge1_cs_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ge1_cs_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ge1_cs_t6_st
+    nop
+    addiu t6, t6, 1
+ge1_cs_t6_st:
+    jr    ra
+    sb    t6, 0x29F(a0)
+
+ge1_blink:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ge1_blink_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ge1_blink_st
+    nop
+    addiu t2, t2, 1
+ge1_blink_st:
+    jr    ra
+    sh    t2, 0x29A(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +464,35 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 56 injections ----
+.headersize 0x80AA0580 - 0x00E203D0            ; ovl_En_Ms
+.org 0x80AA0A38
+    jal   ms_act
+.headersize 0x8091E4E0 - 0x00CBBC60            ; ovl_En_Bird
+.org 0x8091E71C
+    jal   bd_t1
+.org 0x8091E878
+    jal   bd_t2
+.headersize 0x80AD1C20 - 0x00E51A60            ; ovl_En_Ko
+.org 0x80AD3AD4
+    jal   ko_b
+.headersize 0x80AAC5E0 - 0x00E2C430            ; ovl_En_Mk
+.org 0x80AAC8C0
+    jal   mk_t_a2
+.org 0x80AAC91C
+    jal   mk_t_s0
+.org 0x80AAC9B8
+    jal   mk_t_s0
+.headersize 0x80A8F100 - 0x00E11A40            ; ovl_En_Ge1
+.org 0x80A8F5B4
+    jal   ge1_cs_t8
+.org 0x80A8F988
+    jal   ge1_cs_t6
+.org 0x80A8FD98
+    jal   ge1_cs_t6
+.org 0x80A90A9C
+    jal   ge1_blink
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
