@@ -276,6 +276,176 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 30: Boss_Sst (Bongo Bongo) timer — tick-mod ----
+; Bongo Bongo state machine uses a single s16 `timer` (header 0x198,
+; struct-shifted -0x10 -> 0x188) for EVERY phase: intro, idle,
+; vulnerable, swing, charge, death. Source has dozens of value-keyed
+; checks (timer >= 546/478/460/447/372/304/244/192/148/112, timer == 28/84/
+; 240/300/368/447/460, timer % 28, timer <= 198/20, etc.) gating intro
+; animation events. Seed-mod would scramble these triggers. Tick-mod
+; via Pattern E preserves the value sequence and just slows descent
+; rate to 2/3 -> matches 20 fps wall-clock.
+;
+; 30 timer-modifying sh sites: 28 decrements (-1), 1 increment (+1),
+; 1 increment (+2). 12 unique (reg, base, amt) hook variants.
+
+sst_t_dec1_s2_t7:                                ; undo: t7 += 1
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, sst_t_dec1_s2_t7_store                     ; 20 fps -> apply
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; frame phase
+    bnez  t2, sst_t_dec1_s2_t7_store                     ; phase 1/2 -> apply
+    nop
+    addiu t7, t7, 1                            ; phase 0 -> undo
+sst_t_dec1_s2_t7_store:
+    jr    ra
+    sh    t7, 0x188(s2)                        ; (delay slot) original sh
+
+sst_t_dec1_s0_t4:                                ; undo: t4 += 1
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, sst_t_dec1_s0_t4_store                     ; 20 fps -> apply
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; frame phase
+    bnez  t2, sst_t_dec1_s0_t4_store                     ; phase 1/2 -> apply
+    nop
+    addiu t4, t4, 1                            ; phase 0 -> undo
+sst_t_dec1_s0_t4_store:
+    jr    ra
+    sh    t4, 0x188(s0)                        ; (delay slot) original sh
+
+sst_t_dec1_s0_t1:                                ; undo: t1 += 1
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, sst_t_dec1_s0_t1_store                     ; 20 fps -> apply
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; frame phase
+    bnez  t2, sst_t_dec1_s0_t1_store                     ; phase 1/2 -> apply
+    nop
+    addiu t1, t1, 1                            ; phase 0 -> undo
+sst_t_dec1_s0_t1_store:
+    jr    ra
+    sh    t1, 0x188(s0)                        ; (delay slot) original sh
+
+sst_t_dec1_a1_t6:                                ; undo: t6 += 1
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, sst_t_dec1_a1_t6_store                     ; 20 fps -> apply
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; frame phase
+    bnez  t2, sst_t_dec1_a1_t6_store                     ; phase 1/2 -> apply
+    nop
+    addiu t6, t6, 1                            ; phase 0 -> undo
+sst_t_dec1_a1_t6_store:
+    jr    ra
+    sh    t6, 0x188(a1)                        ; (delay slot) original sh
+
+sst_t_dec1_s0_t6:                                ; undo: t6 += 1
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, sst_t_dec1_s0_t6_store                     ; 20 fps -> apply
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; frame phase
+    bnez  t2, sst_t_dec1_s0_t6_store                     ; phase 1/2 -> apply
+    nop
+    addiu t6, t6, 1                            ; phase 0 -> undo
+sst_t_dec1_s0_t6_store:
+    jr    ra
+    sh    t6, 0x188(s0)                        ; (delay slot) original sh
+
+sst_t_dec1_a2_t6:                                ; undo: t6 += 1
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, sst_t_dec1_a2_t6_store                     ; 20 fps -> apply
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; frame phase
+    bnez  t2, sst_t_dec1_a2_t6_store                     ; phase 1/2 -> apply
+    nop
+    addiu t6, t6, 1                            ; phase 0 -> undo
+sst_t_dec1_a2_t6_store:
+    jr    ra
+    sh    t6, 0x188(a2)                        ; (delay slot) original sh
+
+sst_t_dec1_a0_t6:                                ; undo: t6 += 1
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, sst_t_dec1_a0_t6_store                     ; 20 fps -> apply
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; frame phase
+    bnez  t2, sst_t_dec1_a0_t6_store                     ; phase 1/2 -> apply
+    nop
+    addiu t6, t6, 1                            ; phase 0 -> undo
+sst_t_dec1_a0_t6_store:
+    jr    ra
+    sh    t6, 0x188(a0)                        ; (delay slot) original sh
+
+sst_t_dec1_s0_t7:                                ; undo: t7 += 1
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, sst_t_dec1_s0_t7_store                     ; 20 fps -> apply
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; frame phase
+    bnez  t2, sst_t_dec1_s0_t7_store                     ; phase 1/2 -> apply
+    nop
+    addiu t7, t7, 1                            ; phase 0 -> undo
+sst_t_dec1_s0_t7_store:
+    jr    ra
+    sh    t7, 0x188(s0)                        ; (delay slot) original sh
+
+sst_t_dec1_s0_t0:                                ; undo: t0 += 1
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, sst_t_dec1_s0_t0_store                     ; 20 fps -> apply
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; frame phase
+    bnez  t2, sst_t_dec1_s0_t0_store                     ; phase 1/2 -> apply
+    nop
+    addiu t0, t0, 1                            ; phase 0 -> undo
+sst_t_dec1_s0_t0_store:
+    jr    ra
+    sh    t0, 0x188(s0)                        ; (delay slot) original sh
+
+sst_t_dec1_s0_t8:                                ; undo: t8 += 1
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, sst_t_dec1_s0_t8_store                     ; 20 fps -> apply
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; frame phase
+    bnez  t2, sst_t_dec1_s0_t8_store                     ; phase 1/2 -> apply
+    nop
+    addiu t8, t8, 1                            ; phase 0 -> undo
+sst_t_dec1_s0_t8_store:
+    jr    ra
+    sh    t8, 0x188(s0)                        ; (delay slot) original sh
+
+sst_t_inc2_s0_t9:                                ; undo: t9 -= 2
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, sst_t_inc2_s0_t9_store                     ; 20 fps -> apply
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; frame phase
+    bnez  t2, sst_t_inc2_s0_t9_store                     ; phase 1/2 -> apply
+    nop
+    addiu t9, t9, -2                            ; phase 0 -> undo
+sst_t_inc2_s0_t9_store:
+    jr    ra
+    sh    t9, 0x188(s0)                        ; (delay slot) original sh
+
+sst_t_inc1_s0_t4:                                ; undo: t4 -= 1
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, sst_t_inc1_s0_t4_store                     ; 20 fps -> apply
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; frame phase
+    bnez  t2, sst_t_inc1_s0_t4_store                     ; phase 1/2 -> apply
+    nop
+    addiu t4, t4, -1                            ; phase 0 -> undo
+sst_t_inc1_s0_t4_store:
+    jr    ra
+    sh    t4, 0x188(s0)                        ; (delay slot) original sh
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +508,69 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 30 injections ----
+.headersize 0x80A17AF0 - 0x00DA1660            ; ovl_Boss_Sst
+.org 0x80A181B4                                ; was sh t7,0x188(s2) (-1)
+    jal   sst_t_dec1_s2_t7
+.org 0x80A19128                                ; was sh t4,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t4
+.org 0x80A19E3C                                ; was sh t1,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t1
+.org 0x80A19F70                                ; was sh t6,0x188(a1) (-1)
+    jal   sst_t_dec1_a1_t6
+.org 0x80A1A63C                                ; was sh t6,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t6
+.org 0x80A1A8EC                                ; was sh t6,0x188(a2) (-1)
+    jal   sst_t_dec1_a2_t6
+.org 0x80A1A99C                                ; was sh t6,0x188(a0) (-1)
+    jal   sst_t_dec1_a0_t6
+.org 0x80A1AD48                                ; was sh t6,0x188(a0) (-1)
+    jal   sst_t_dec1_a0_t6
+.org 0x80A1AE8C                                ; was sh t7,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t7
+.org 0x80A1B244                                ; was sh t1,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t1
+.org 0x80A1B400                                ; was sh t0,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t0
+.org 0x80A1B714                                ; was sh t0,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t0
+.org 0x80A1BB48                                ; was sh t6,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t6
+.org 0x80A1BD48                                ; was sh t6,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t6
+.org 0x80A1BEF4                                ; was sh t6,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t6
+.org 0x80A1C884                                ; was sh t6,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t6
+.org 0x80A1CAF8                                ; was sh t8,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t8
+.org 0x80A1CFDC                                ; was sh t8,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t8
+.org 0x80A1D2F4                                ; was sh t7,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t7
+.org 0x80A1D8DC                                ; was sh t6,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t6
+.org 0x80A1DC00                                ; was sh t6,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t6
+.org 0x80A1E1BC                                ; was sh t6,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t6
+.org 0x80A1E334                                ; was sh t6,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t6
+.org 0x80A1E6F4                                ; was sh t6,0x188(a0) (-1)
+    jal   sst_t_dec1_a0_t6
+.org 0x80A1E78C                                ; was sh t6,0x188(a0) (-1)
+    jal   sst_t_dec1_a0_t6
+.org 0x80A1E984                                ; was sh t6,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t6
+.org 0x80A1ED48                                ; was sh t8,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t8
+.org 0x80A1EDB8                                ; was sh t1,0x188(s0) (-1)
+    jal   sst_t_dec1_s0_t1
+.org 0x80A19E08                                ; was sh t9,0x188(s0) (+2)
+    jal   sst_t_inc2_s0_t9
+.org 0x80A1D5CC                                ; was sh t4,0x188(s0) (+1)
+    jal   sst_t_inc1_s0_t4
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
