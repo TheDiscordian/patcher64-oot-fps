@@ -276,6 +276,145 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 54: En_Crow + En_Honotrap + En_Ny + En_Owl — tick-mod ----
+; Four actors bundled (4+1+5+1 sites):
+;   En_Crow (Guay - field crow): timer x4 sites
+;   En_Honotrap (Spirit Temple wall-mounted fire trap): timer
+;   En_Ny (Spike / Tektite-Spike rolling enemy): timer (++) + stoneTimer (s32)
+;   En_Owl (Kaepora Gaebora): blinkTimer
+; All ==0/!=0 gates. Tick-mod via Pattern E.
+
+cr_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cr_t1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cr_t1_st
+    nop
+    addiu t6, t6, 1
+cr_t1_st:
+    jr    ra
+    sh    t6, 0x1B4(s0)
+
+cr_t2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cr_t2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cr_t2_st
+    nop
+    addiu t8, t8, 1
+cr_t2_st:
+    jr    ra
+    sh    t8, 0x1B4(s0)
+
+cr_t3:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cr_t3_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cr_t3_st
+    nop
+    addiu t1, t1, 1
+cr_t3_st:
+    jr    ra
+    sh    t1, 0x1B4(s0)
+
+ht_t:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ht_t_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ht_t_st
+    nop
+    addiu t6, t6, 1
+ht_t_st:
+    jr    ra
+    sh    t6, 0x218(s0)
+
+ny_s_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ny_s_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ny_s_s0_st
+    nop
+    addiu t6, t6, 1
+ny_s_s0_st:
+    jr    ra
+    sw    t6, 0x1CC(s0)
+
+ny_s_a0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ny_s_a0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ny_s_a0_st
+    nop
+    addiu t6, t6, 1
+ny_s_a0_st:
+    jr    ra
+    sw    t6, 0x1CC(a0)
+
+ny_t_s2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ny_t_s2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ny_t_s2_st
+    nop
+    addiu t7, t7, -1
+ny_t_s2_st:
+    jr    ra
+    sh    t7, 0x1B8(s2)
+
+ny_t_a0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ny_t_a0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ny_t_a0_st
+    nop
+    addiu t7, t7, -1
+ny_t_a0_st:
+    jr    ra
+    sh    t7, 0x1B8(a0)
+
+ny_t_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ny_t_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ny_t_s0_st
+    nop
+    addiu t7, t7, -1
+ny_t_s0_st:
+    jr    ra
+    sh    t7, 0x1B8(s0)
+
+ow_b:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ow_b_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ow_b_st
+    nop
+    addiu t9, t9, 1
+ow_b_st:
+    jr    ra
+    sh    t9, 0x3E6(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +477,34 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 54 injections ----
+.headersize 0x80B72BD0 - 0x00EEE2F0            ; ovl_En_Crow
+.org 0x80B735A8
+    jal   cr_t1
+.org 0x80B7366C
+    jal   cr_t2
+.org 0x80B73A28
+    jal   cr_t3
+.org 0x80B73A74
+    jal   cr_t1
+.headersize 0x80A765E0 - 0x00DF8F20            ; ovl_En_Honotrap
+.org 0x80A7748C
+    jal   ht_t
+.headersize 0x80A24050 - 0x00DADB80            ; ovl_En_Ny
+.org 0x80A24428
+    jal   ny_s_s0
+.org 0x80A245EC
+    jal   ny_s_a0
+.org 0x80A24974
+    jal   ny_t_s2
+.org 0x80A25068
+    jal   ny_t_a0
+.org 0x80A250D0
+    jal   ny_t_s0
+.headersize 0x80AAF320 - 0x00E2F170            ; ovl_En_Owl
+.org 0x80AB1C00
+    jal   ow_b
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
