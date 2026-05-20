@@ -276,6 +276,199 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 52: En_Fd + En_Clear_Tag + En_Jj + En_G_Switch — tick-mod ----
+; Four actors bundled (4+4+2+4 sites):
+;   En_Fd (Flare Dancer enflamed form): attackTimer, spinTimer x3 sites
+;   En_Clear_Tag (Beamos beam, Light Arrows beam etc): frameCounter (++),
+;     crashingTimer, deathTimer, cutsceneTimer
+;   En_Jj (Lord Jabu-Jabu): cutsceneCountdownTimer, blinkTimer
+;   En_G_Switch (silver rupees / horse archery targets / SG targets):
+;     killTimer (++ and --), waitTimer, delayTimer
+; All ==0/!=0 gates. Tick-mod via Pattern E.
+
+m2_attack_s0_t5:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_attack_s0_t5_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_attack_s0_t5_st
+    nop
+    addiu t5, t5, 1
+m2_attack_s0_t5_st:
+    jr    ra
+    sh    t5, 0x4B4(s0)
+
+m2_spin1_s0_t3:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_spin1_s0_t3_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_spin1_s0_t3_st
+    nop
+    addiu t3, t3, 1
+m2_spin1_s0_t3_st:
+    jr    ra
+    sh    t3, 0x4AE(s0)
+
+m2_spin2_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_spin2_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_spin2_s0_t8_st
+    nop
+    addiu t8, t8, 1
+m2_spin2_s0_t8_st:
+    jr    ra
+    sh    t8, 0x4AE(s0)
+
+m2_spin3_a0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_spin3_a0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_spin3_a0_t6_st
+    nop
+    addiu t6, t6, 1
+m2_spin3_a0_t6_st:
+    jr    ra
+    sh    t6, 0x4AE(a0)
+
+m2_frame_s1_t9:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_frame_s1_t9_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_frame_s1_t9_st
+    nop
+    addiu t9, t9, -1
+m2_frame_s1_t9_st:
+    jr    ra
+    sb    t9, 0x16C(s1)
+
+m2_cs_s1_t3:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_cs_s1_t3_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_cs_s1_t3_st
+    nop
+    addiu t3, t3, 1
+m2_cs_s1_t3_st:
+    jr    ra
+    sh    t3, 0x1EC(s1)
+
+m2_crash_s1_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_crash_s1_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_crash_s1_t6_st
+    nop
+    addiu t6, t6, 1
+m2_crash_s1_t6_st:
+    jr    ra
+    sh    t6, 0x174(s1)
+
+m2_death_s1_t0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_death_s1_t0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_death_s1_t0_st
+    nop
+    addiu t0, t0, 1
+m2_death_s1_t0_st:
+    jr    ra
+    sh    t0, 0x176(s1)
+
+m2_blink_a2_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_blink_a2_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_blink_a2_t6_st
+    nop
+    addiu t6, t6, 1
+m2_blink_a2_t6_st:
+    jr    ra
+    sb    t6, 0x2FF(a2)
+
+m2_csCD_a0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_csCD_a0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_csCD_a0_t6_st
+    nop
+    addiu t6, t6, 1
+m2_csCD_a0_t6_st:
+    jr    ra
+    sh    t6, 0x2FC(a0)
+
+m2_kill_inc_v0_t9:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_kill_inc_v0_t9_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_kill_inc_v0_t9_st
+    nop
+    addiu t9, t9, -1
+m2_kill_inc_v0_t9_st:
+    jr    ra
+    sh    t9, 0x146(v0)
+
+m2_kill_dec_s0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_kill_dec_s0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_kill_dec_s0_t6_st
+    nop
+    addiu t6, t6, 1
+m2_kill_dec_s0_t6_st:
+    jr    ra
+    sh    t6, 0x146(s0)
+
+m2_wait_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_wait_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_wait_s0_t7_st
+    nop
+    addiu t7, t7, 1
+m2_wait_s0_t7_st:
+    jr    ra
+    sh    t7, 0x154(s0)
+
+m2_delay_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, m2_delay_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, m2_delay_s0_t8_st
+    nop
+    addiu t8, t8, 1
+m2_delay_s0_t8_st:
+    jr    ra
+    sh    t8, 0x152(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +531,40 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 52 injections ----
+.headersize 0x80954F50 - 0x00CF25E0            ; ovl_En_Fd
+.org 0x8095545C
+    jal   m2_attack_s0_t5
+.org 0x809558EC
+    jal   m2_spin1_s0_t3
+.org 0x80955EE4
+    jal   m2_spin2_s0_t8
+.org 0x80956318
+    jal   m2_spin3_a0_t6
+.headersize 0x80A929D0 - 0x00E15250            ; ovl_En_Clear_Tag
+.org 0x80A930A0
+    jal   m2_frame_s1_t9
+.org 0x80A930E4
+    jal   m2_cs_s1_t3
+.org 0x80A937E8
+    jal   m2_crash_s1_t6
+.org 0x80A93DE0
+    jal   m2_death_s1_t0
+.headersize 0x80901B70 - 0x00C9F330            ; ovl_En_Jj
+.org 0x80901EB8
+    jal   m2_blink_a2_t6
+.org 0x80902098
+    jal   m2_csCD_a0_t6
+.headersize 0x80A706E0 - 0x00DF3020            ; ovl_En_G_Switch
+.org 0x80A711D8
+    jal   m2_kill_inc_v0_t9
+.org 0x80A71584
+    jal   m2_kill_dec_s0_t6
+.org 0x80A71594
+    jal   m2_wait_s0_t7
+.org 0x80A715A4
+    jal   m2_delay_s0_t8
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
