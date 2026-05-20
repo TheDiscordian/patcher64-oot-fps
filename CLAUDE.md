@@ -189,6 +189,13 @@ Buckets 4 & 5. See Status above.
   visibly runs ~1.5× too fast at 30 FPS; (2) the FIX works — on the patched ROM
   it matches the 20 FPS baseline. A fix whose "bug" was never confirmed on the
   control must not be called verified.
+- **Never skip a seed/decrement site on the grounds that the wall-clock shift
+  is "too brief to perceive".** Track record: 0% accuracy. If a raw `timer--`
+  field uses a fixed `li` seed and shares the field with a confirmed-bug timer,
+  patch every seed site for that field. Only skip when there's a CONCRETE
+  reason — e.g. the field has an intermediate threshold check that seed-mod
+  would break (use tick-mod instead, not "skip"), or the field is purely
+  internal state with no behaviour gating it.
 - A user-confirmed A/B test is GROUND TRUTH — it outranks any inference. Never
   declare a confirmed bug "not real" because a *different* thing looks fine
   (Link's jump looking right does NOT unconfirm a confirmed thrown-object bug).
