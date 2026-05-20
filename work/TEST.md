@@ -62,6 +62,34 @@ Each bug is a counter that ticks 1.5× too fast at broken-30fps. Lines give the
 - 🎵 **Bucket 10 — ReDead AI timers** ✅ VERIFIED (user, 2026-05-19) — same
   test run as B9. Covers sunsSongStunTimer, fireTimer, playerStunWaitTimer
   (scream cooldown) and grabWaitTimer.
+- 🗿 **Bucket 11 — Armos AI** 🔨 BUILT — **Map Select → entry 81 (Spirit
+  Temple)**. Run forward (south) ~760 units from spawn to reach the two
+  active Armos statues flanking the central lift. Slash one to wake it.
+  Test the cadence: attack-recovery pause should be ~2 s, lunge duration
+  ~10 s, freeze (with blue fire) ~2.4 s, death animation ~3.2 s. Toggle
+  L+Z to A/B. **NOTE**: the lunge motion + multi-hop death are broken on
+  stock 30 fps Redux too — that's a separate pre-existing bug we haven't
+  fixed yet (SkelAnime curFrame strict-equality), not a regression from
+  B11.
+- 👁 **Bucket 12 — Gohma patience** 🔨 BUILT — **Deku Tree boss room**
+  (entry next-up from Map Select 66 — boss-room entry). Stand on the
+  ground floor; don't engage. Gohma drops down then patrols on the
+  ceiling — time from full-patience to next drop-attack should be ~10 s
+  on both 20 fps and 30 fps. On the control ROM at 30 fps the cycle is
+  ~6.7 s.
+- 🏛 **Bucket 13 — Fire Temple stone elevator** 🔨 BUILT — **Map Select →
+  entry 77 (Fire Temple)**. Find the stone elevator in the central
+  tower. Stand on it — full cycle should be wall-clock identical at 20
+  and 30 fps on the patched ROM.
+- 🪨 **Bucket 14 — Forest Temple falling block** 🔨 BUILT — **Map Select →
+  entry 72 (Forest Temple)**. Find a room with a falling block (the
+  courtyard has them). Stand under the block. ~1 s of SFX warning before
+  it drops on both 20 and 30 fps on the patched ROM.
+- 🏹 **Bucket 15 — Arrow Trap** 🔨 BUILT — **Map Select → entry 68
+  (Dodongo's Cavern)**. The first room past the entrance has arrow
+  traps along the side wall. Stand at the marble and count seconds
+  between arrow shots. Patched: ~4 s. Stock 30 fps: ~2.7 s. Toggle L+Z
+  to A/B.
 
 ## Map Select — navigate by NUMBER
 
