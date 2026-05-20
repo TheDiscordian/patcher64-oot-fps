@@ -276,6 +276,34 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 17: Dead Hand (En_Dha) actionTimer seeds ----
+; Bottom of the Well / Shadow Temple miniboss. Two fixed-seed sites:
+;   seed 15  -> 23  (z_en_dha.c:325, ~0.75 s phase)
+;   seed 300 -> 450 (z_en_dha.c:353, ~15 s phase — most impactful)
+; The third seed at line 199 is `Rand_ZeroOne() * 10 + 5` (random 5-15) —
+; skip for now, scaling that requires float-mul intercepts (complex).
+; actionTimer is only `== 0` checked, so plain seed-mod.
+
+dha_seed_15:                                   ; replaces li t6,15 at 0x8096DCD0
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, ds15_done                        ; 20 fps -> keep t6 = 15
+    li    t6, 15                               ; (delay slot)
+    li    t6, 23                               ; 30 fps -> 15 * 1.5 = 22.5 -> 23
+ds15_done:
+    jr    ra
+    nop
+
+dha_seed_300:                                  ; replaces li t7,300 at 0x8096DDC8
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, ds300_done                       ; 20 fps -> keep t7 = 300
+    li    t7, 300                              ; (delay slot)
+    li    t7, 450                              ; 30 fps -> 300 * 1.5
+ds300_done:
+    jr    ra
+    nop
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +366,13 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 17 — ovl_En_Dha (Dead Hand miniboss)
+.headersize 0x8096D610 - 0x00D0ACA0
+.org 0x8096DCD0                                ; was `li t6,15` (actionTimer=15 seed)
+    jal   dha_seed_15
+.org 0x8096DDC8                                ; was `li t7,300` (actionTimer=300 seed)
+    jal   dha_seed_300
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
