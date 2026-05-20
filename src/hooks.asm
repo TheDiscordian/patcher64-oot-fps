@@ -276,6 +276,46 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 49: Boss_Fd (Volvagia) timers — tick-mod ----
+; Volvagia (Fire Temple boss). Two labeled timer-class fields:
+;   timers[6] (s16 array at 0x238 struct, 0x248 header) - covered via
+;     a single sh inside the for-loop body at 0x8094ce94
+;   fireBreathTimer (s16 at 0x20C struct, 0x21C header) - fire-breath
+;     attack cooldown
+;
+; Source has many strict-eq checks: timers[0] == 50/40/100, timers[0] < 50,
+; timers[0] == 0 across the state machine (lines 360-465). Tick-mod via
+; Pattern E preserves value sequence so all phase gates fire wall-clock-
+; correct at 30 fps.
+; 2 sites (1 loop body covering all 6 timers + 1 fireBreath).
+
+fd_timers_loop:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fd_timers_loop_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fd_timers_loop_st
+    nop
+    addiu t1, t1, 1
+fd_timers_loop_st:
+    jr    ra
+    sh    t1, 0x238(v0)
+
+fd_fireBreath:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fd_fireBreath_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fd_fireBreath_st
+    nop
+    addiu t2, t2, 1
+fd_fireBreath_st:
+    jr    ra
+    sh    t2, 0x20C(s3)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +378,13 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 49 injections ----
+.headersize 0x80948F60 - 0x00CE65F0            ; ovl_Boss_Fd
+.org 0x8094CE94
+    jal   fd_timers_loop
+.org 0x8094CEB0
+    jal   fd_fireBreath
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
