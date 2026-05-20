@@ -276,6 +276,103 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 22: Wolfos (En_Wf) actionTimer + fireTimer tick-mod ----
+; Forest Temple courtyard / dungeon Wolfos enemy. Source has many random
+; seeds (`Rand_ZeroOne()` * N + M) for actionTimer plus value-keyed checks
+; (`(fireTimer % 4) == 0` at line 1483, `(fireTimer >> 2)` at line 1484).
+; Random seeds + threshold checks both rule out Pattern A/B seed-mod —
+; use Pattern E tick-mod across every decrement-store.
+;
+; actionTimer is s32 at struct offset 0x2D8 (header /* 0x2E8 */). Six
+; decrement sites, all base s0, five different decrement registers:
+;   t0 (1 site), t2 (2 sites), t3 (1), t7 (1), t9 (1).
+; fireTimer is s16 at 0x2D4 (header /* 0x2E4 */). One decrement site,
+; base s0, register t6.
+
+wf_action_tick_t0:                             ; (s0, t0) — t0 is the value, use t1 scratch
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, watt0_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, watt0_store
+    nop
+    addiu t0, t0, 1
+watt0_store:
+    sw    t0, 0x2D8(s0)
+    jr    ra
+    lw    v0, 0x2D8(s0)
+
+wf_action_tick_t2:
+    lui   t1, 0x8042                           ; t1 scratch (t2 is the value)
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, watt2_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, watt2_store
+    nop
+    addiu t2, t2, 1
+watt2_store:
+    sw    t2, 0x2D8(s0)
+    jr    ra
+    lw    v0, 0x2D8(s0)
+
+wf_action_tick_t3:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, watt3_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, watt3_store
+    nop
+    addiu t3, t3, 1
+watt3_store:
+    sw    t3, 0x2D8(s0)
+    jr    ra
+    lw    v0, 0x2D8(s0)
+
+wf_action_tick_t7:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, watt7_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, watt7_store
+    nop
+    addiu t7, t7, 1
+watt7_store:
+    sw    t7, 0x2D8(s0)
+    jr    ra
+    lw    v0, 0x2D8(s0)
+
+wf_action_tick_t9:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, watt9_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, watt9_store
+    nop
+    addiu t9, t9, 1
+watt9_store:
+    sw    t9, 0x2D8(s0)
+    jr    ra
+    lw    v0, 0x2D8(s0)
+
+wf_fire_tick:                                  ; (s0, t6) for fireTimer (s16)
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)
+    beqz  t2, wft_store
+    lui   t2, 0x801C
+    lbu   t2, 0x6FB4(t2)
+    bnez  t2, wft_store
+    nop
+    addiu t6, t6, 1
+wft_store:
+    sh    t6, 0x2D4(s0)
+    jr    ra
+    lh    v1, 0x2D4(s0)                        ; downstream reads v1 not v0
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +435,23 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 22 — ovl_En_Wf (Wolfos) actionTimer + fireTimer
+.headersize 0x80B5C930 - 0x00ED8060
+.org 0x80B5D168                                ; sw t2,728(s0)
+    jal   wf_action_tick_t2
+.org 0x80B5D3C0                                ; sw t0,728(s0)
+    jal   wf_action_tick_t0
+.org 0x80B5E110                                ; sw t9,728(s0)
+    jal   wf_action_tick_t9
+.org 0x80B5E3F8                                ; sw t2,728(s0)
+    jal   wf_action_tick_t2
+.org 0x80B5EFD0                                ; sw t7,728(s0)
+    jal   wf_action_tick_t7
+.org 0x80B5F70C                                ; sw t3,728(s0)
+    jal   wf_action_tick_t3
+.org 0x80B60428                                ; sh t6,724(s0) (fireTimer dec)
+    jal   wf_fire_tick
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
