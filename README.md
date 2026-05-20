@@ -40,7 +40,8 @@ CFG_DEFAULT_30_FPS is set to 1, so the ROM boots at 30 FPS by default. Use **L+Z
 ## 🗂 Layout
 
 ```
-src/hooks.asm                the fixes (armips source) ⭐ edit here
+src/hooks.asm                the fixes — dev build (with Map Select boot) ⭐ edit here
+src/hooks-release.asm        release build (same fixes, no Map Select redirect)
 src/control.asm              control-ROM source (30 FPS, NO fixes — for A/B)
 CLAUDE.md                    project notes, conventions, dead ends — read first
 PROGRESS.md                  status log (which buckets are verified vs pending)
@@ -82,19 +83,24 @@ tools/armips-src/build/armips src/hooks.asm
 
 This writes `work/oot-redux-30fps.z64` (the patched ROM). Paths in the `.asm` files are relative to the working directory armips runs from — always invoke it from the repo root.
 
-A separate **control** ROM (Redux 30 FPS with NONE of the bucket fixes — for A/B comparison) builds with:
+### Three build variants
 
-```
-tools/armips-src/build/armips src/control.asm
-```
+| Source file | Output ROM | What it is |
+|---|---|---|
+| `src/hooks.asm` ⭐ | `work/oot-redux-30fps.z64` | **Dev/test build** — all bucket fixes + boot redirected to OoT's built-in Map Select debug menu, with a forced full-inventory debug save. Lets you warp to any scene instantly for testing. |
+| `src/hooks-release.asm` | `work/oot-redux-30fps-release.z64` | **Release build** — same bucket fixes, but boots normally (Nintendo logo → file select → choose / create your own save → play). Use this for actually *playing* the game. |
+| `src/control.asm` | `work/oot-redux-30fps-stock.z64` | **Control ROM** — Redux 30 FPS with NONE of the bucket fixes. Used to A/B verify that each bucket really is fixing a real bug, not papering over nothing. |
 
-→ `work/oot-redux-30fps-stock.z64`.
-
-No CRC step needed — every patch lands past ROM `0x101000`, beyond the N64 boot-checksum range.
+All three:
+- Start at 30 FPS (`CFG_DEFAULT_30_FPS = 1`).
+- Honour the **L+Z** toggle to switch 20 ↔ 30 FPS live.
+- Build past ROM `0x101000`, beyond the N64 boot-checksum range — no CRC step needed.
 
 ## 🧪 Testing tip
 
-The fixed ROM and the control ROM both boot **directly into OoT's built-in Map Select** debug menu (Patcher64+'s 30 FPS payload exposes it; we just redirect the boot path there and force a full-inventory debug save). That means every test is **scroll to scene number → press A → done**. No "fight your way to dungeon X" — see `work/TEST.md` for the verified per-bucket warp routes.
+The dev `oot-redux-30fps.z64` and the control `oot-redux-30fps-stock.z64` both boot **directly into OoT's built-in Map Select** debug menu (Patcher64+'s 30 FPS payload exposes it; we just redirect the boot path there and force a full-inventory debug save). That means every test is **scroll to scene number → press A → done**. No "fight your way to dungeon X" — see `work/TEST.md` for the verified per-bucket warp routes.
+
+The release ROM (`-release.z64`) deliberately omits the Map Select redirect — start a normal file, play normally.
 
 ## 📜 License
 
