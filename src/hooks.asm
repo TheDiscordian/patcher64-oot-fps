@@ -274,6 +274,56 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 11: scale Armos (En_Am) AI timer seeds by 1.5 in 30 fps ----
+; Same family — raw `timer--` on s16 fields. Struct shifted -0x10 vs header:
+;   header 0x25A cooldownTimer -> 0x24A
+;   header 0x25C attackTimer   -> 0x24C
+;   header 0x25E iceTimer      -> 0x24E
+;   header 0x260 deathTimer    -> 0x250
+; Skip cooldownTimer=5 (briefly 0.25 s, sub-perceptual). Skip attackTimer in
+; EnAm_Sleep at the `li t5,200` site because it sits in `bnez at` delay slot;
+; patch the `sh t5,588(s0)` store instead.
+
+armos_cooldown_seed:                           ; replaces li t7,40 at 0x808F973C
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, acs_done                         ; 20 fps -> keep t7 = 40
+    li    t7, 40                               ; (delay slot) original value
+    li    t7, 60                               ; 30 fps -> 40 * 1.5
+acs_done:
+    jr    ra
+    nop
+
+armos_attack_seed:                             ; replaces sh t5,588(a0/s0) at 0x808F9AC8
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, aas_store                        ; 20 fps -> keep t5 = 200
+    nop
+    li    t5, 300                              ; 30 fps -> 200 * 1.5
+aas_store:
+    jr    ra
+    sh    t5, 0x24C(s0)                        ; (delay slot) original store
+
+armos_death_seed:                              ; replaces li t6,64 at 0x808FA0E4
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, ads_done                         ; 20 fps -> keep t6 = 64
+    li    t6, 64                               ; (delay slot) original value
+    li    t6, 96                               ; 30 fps -> 64 * 1.5
+ads_done:
+    jr    ra
+    nop
+
+armos_ice_seed:                                ; replaces li t0,48 at 0x808FA774
+    lui   t2, 0x8042                           ; t2 scratch (t0 is the seed!)
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, ais_done                         ; 20 fps -> keep t0 = 48
+    li    t0, 48                               ; (delay slot) original value
+    li    t0, 72                               ; 30 fps -> 48 * 1.5
+ais_done:
+    jr    ra
+    nop
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -336,6 +386,17 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 11 — ovl_En_Am (Armos AI seeds)
+.headersize 0x808F9080 - 0x00C96840
+.org 0x808F973C                                ; was `li t7,40` in EnAm_SetupCooldown
+    jal   armos_cooldown_seed
+.org 0x808F9AC8                                ; was `sh t5,588(s0)` in EnAm_Sleep (attackTimer=200)
+    jal   armos_attack_seed
+.org 0x808FA0E4                                ; was `li t6,64` (deathTimer=64)
+    jal   armos_death_seed
+.org 0x808FA774                                ; was `li t0,48` (iceTimer=48)
+    jal   armos_ice_seed
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
