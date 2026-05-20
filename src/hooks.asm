@@ -276,6 +276,91 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 47: En_Fz (Freezard) + En_Peehat (Peahat) AI timers — tick-mod ----
+; Two enemies bundled (2 + 6 sites):
+;   En_Fz: unusedTimer1, unusedTimer2 (despite name, still ticked per frame)
+;   En_Peehat: riseDelayTimer, seekPlayerTimer, animTimer
+; All ==0/!=0 gates. Tick-mod via Pattern E for uniformity.
+
+fzp_uT1_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fzp_uT1_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fzp_uT1_s0_t8_st
+    nop
+    addiu t8, t8, 1
+fzp_uT1_s0_t8_st:
+    jr    ra
+    sh    t8, 0x232(s0)
+
+fzp_uT2_s0_t0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fzp_uT2_s0_t0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fzp_uT2_s0_t0_st
+    nop
+    addiu t0, t0, 1
+fzp_uT2_s0_t0_st:
+    jr    ra
+    sb    t0, 0x253(s0)
+
+fzp_rise_s0_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fzp_rise_s0_t1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fzp_rise_s0_t1_st
+    nop
+    addiu t1, t1, 1
+fzp_rise_s0_t1_st:
+    jr    ra
+    sh    t1, 0x2E6(s0)
+
+fzp_anim_s0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fzp_anim_s0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fzp_anim_s0_t6_st
+    nop
+    addiu t6, t6, 1
+fzp_anim_s0_t6_st:
+    jr    ra
+    sh    t6, 0x2EC(s0)
+
+fzp_seek_s0_t9:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fzp_seek_s0_t9_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fzp_seek_s0_t9_st
+    nop
+    addiu t9, t9, 1
+fzp_seek_s0_t9_st:
+    jr    ra
+    sh    t9, 0x2E8(s0)
+
+fzp_anim_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fzp_anim_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fzp_anim_s0_t7_st
+    nop
+    addiu t7, t7, 1
+fzp_anim_s0_t7_st:
+    jr    ra
+    sh    t7, 0x2EC(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +423,26 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 47 injections ----
+.headersize 0x80A7A030 - 0x00DFC970            ; ovl_En_Fz
+.org 0x80A7B384                                ; uT1 sh t8,0x232(s0)
+    jal   fzp_uT1_s0_t8
+.org 0x80A7B3A4                                ; uT2 sb t0,0x253(s0)
+    jal   fzp_uT2_s0_t0
+.headersize 0x80892000 - 0x00C2F8D0            ; ovl_En_Peehat
+.org 0x808927CC                                ; rise sh t1,0x2E6(s0)
+    jal   fzp_rise_s0_t1
+.org 0x80892CF0                                ; anim sh t6,0x2EC(s0)
+    jal   fzp_anim_s0_t6
+.org 0x80892F60                                ; anim sh t6,0x2EC(s0)
+    jal   fzp_anim_s0_t6
+.org 0x8089319C                                ; seek sh t9,0x2E8(s0)
+    jal   fzp_seek_s0_t9
+.org 0x80893CB0                                ; seek sh t9,0x2E8(s0)
+    jal   fzp_seek_s0_t9
+.org 0x808946E4                                ; anim sh t7,0x2EC(s0)
+    jal   fzp_anim_s0_t7
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
