@@ -276,6 +276,505 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 67: doors / Bg objects / Demo / Magic Fire / Elf / Wonder — tick-mod ----
+; Big batch covering 10 actors with 42 timer-modifying sites total.
+; All use t-register data, so standard v0 scratch is safe throughout.
+
+ds_unlock:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ds_unlock_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ds_unlock_st
+    nop
+    addiu t6, t6, 1
+ds_unlock_st:
+    jr    ra
+    sb    t6, 0x15E(s0)
+
+ds_action1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ds_action1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ds_action1_st
+    nop
+    addiu t8, t8, -1
+ds_action1_st:
+    jr    ra
+    sb    t8, 0x15F(a0)
+
+ds_action2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ds_action2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ds_action2_st
+    nop
+    addiu t6, t6, -1
+ds_action2_st:
+    jr    ra
+    sb    t6, 0x15F(a3)
+
+bd_t_s0_t9:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bd_t_s0_t9_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bd_t_s0_t9_st
+    nop
+    addiu t9, t9, 1
+bd_t_s0_t9_st:
+    jr    ra
+    sh    t9, 0x15A(s0)
+
+bd_t_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bd_t_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bd_t_s0_t8_st
+    nop
+    addiu t8, t8, 1
+bd_t_s0_t8_st:
+    jr    ra
+    sh    t8, 0x15A(s0)
+
+bd_t_s0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bd_t_s0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bd_t_s0_t6_st
+    nop
+    addiu t6, t6, 1
+bd_t_s0_t6_st:
+    jr    ra
+    sh    t6, 0x15A(s0)
+
+bd_t_s0_t2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bd_t_s0_t2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bd_t_s0_t2_st
+    nop
+    addiu t2, t2, 1
+bd_t_s0_t2_st:
+    jr    ra
+    sh    t2, 0x15A(s0)
+
+bd_t_a2_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bd_t_a2_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bd_t_a2_t7_st
+    nop
+    addiu t7, t7, 1
+bd_t_a2_t7_st:
+    jr    ra
+    sh    t7, 0x15A(a2)
+
+bd_t_a0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bd_t_a0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bd_t_a0_t6_st
+    nop
+    addiu t6, t6, 1
+bd_t_a0_t6_st:
+    jr    ra
+    sh    t6, 0x15A(a0)
+
+bd_camChg:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bd_camChg_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bd_camChg_st
+    nop
+    addiu t3, t3, 1
+bd_camChg_st:
+    jr    ra
+    sb    t3, 0x158(s0)
+
+bd_t_a3_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bd_t_a3_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bd_t_a3_t6_st
+    nop
+    addiu t6, t6, 1
+bd_t_a3_t6_st:
+    jr    ra
+    sh    t6, 0x15A(a3)
+
+gnO_flash:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gnO_flash_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gnO_flash_st
+    nop
+    addiu t7, t7, -1
+gnO_flash_st:
+    jr    ra
+    sb    t7, 0x15D(a0)
+
+gnO_drop:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gnO_drop_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gnO_drop_st
+    nop
+    addiu t8, t8, 1
+gnO_drop_st:
+    jr    ra
+    sh    t8, 0x158(a0)
+
+dm_t1_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dm_t1_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dm_t1_s0_st
+    nop
+    addiu t7, t7, 1
+dm_t1_s0_st:
+    jr    ra
+    sh    t7, 0x156(s0)
+
+dm_t2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dm_t2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dm_t2_st
+    nop
+    addiu t5, t5, 1
+dm_t2_st:
+    jr    ra
+    sh    t5, 0x158(s0)
+
+dm_t1_a2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dm_t1_a2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dm_t1_a2_st
+    nop
+    addiu t6, t6, 1
+dm_t1_a2_st:
+    jr    ra
+    sh    t6, 0x156(a2)
+
+jm_light_inc:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, jm_light_inc_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, jm_light_inc_st
+    nop
+    addiu t8, t8, -1
+jm_light_inc_st:
+    jr    ra
+    sh    t8, 0x1B8(s0)
+
+jm_light_dec:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, jm_light_dec_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, jm_light_dec_st
+    nop
+    addiu t4, t4, 1
+jm_light_dec_st:
+    jr    ra
+    sh    t4, 0x1B8(s0)
+
+jm_expl:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, jm_expl_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, jm_expl_st
+    nop
+    addiu t7, t7, -1
+jm_expl_st:
+    jr    ra
+    sh    t7, 0x1BA(s4)
+
+mh_bounce:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mh_bounce_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mh_bounce_st
+    nop
+    addiu t3, t3, -1
+mh_bounce_st:
+    jr    ra
+    sh    t3, 0x1BA(s0)
+
+mh_hit:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mh_hit_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mh_hit_st
+    nop
+    addiu t6, t6, 1
+mh_hit_st:
+    jr    ra
+    sh    t6, 0x1B8(a0)
+
+elf_disapp_t9:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, elf_disapp_t9_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, elf_disapp_t9_st
+    nop
+    addiu t9, t9, 1
+elf_disapp_t9_st:
+    jr    ra
+    sh    t9, 0x2B2(s0)
+
+elf_disapp_t0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, elf_disapp_t0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, elf_disapp_t0_st
+    nop
+    addiu t0, t0, 1
+elf_disapp_t0_st:
+    jr    ra
+    sh    t0, 0x2B2(s0)
+
+elf_t_s0_t0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, elf_t_s0_t0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, elf_t_s0_t0_st
+    nop
+    addiu t0, t0, -1
+elf_t_s0_t0_st:
+    jr    ra
+    sh    t0, 0x2AE(s0)
+
+elf_t_s0_t3:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, elf_t_s0_t3_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, elf_t_s0_t3_st
+    nop
+    addiu t3, t3, -1
+elf_t_s0_t3_st:
+    jr    ra
+    sh    t3, 0x2AE(s0)
+
+elf_t_a0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, elf_t_a0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, elf_t_a0_t8_st
+    nop
+    addiu t8, t8, -1
+elf_t_a0_t8_st:
+    jr    ra
+    sh    t8, 0x2AE(a0)
+
+wi_t:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, wi_t_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, wi_t_st
+    nop
+    addiu t6, t6, 1
+wi_t_st:
+    jr    ra
+    sh    t6, 0x14C(s0)
+
+mf_action_a2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mf_action_a2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mf_action_a2_st
+    nop
+    addiu t6, t6, 1
+mf_action_a2_st:
+    jr    ra
+    sh    t6, 0x198(a2)
+
+mf_action_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mf_action_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mf_action_s0_st
+    nop
+    addiu t5, t5, 1
+mf_action_s0_st:
+    jr    ra
+    sh    t5, 0x198(s0)
+
+mf_screen:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mf_screen_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mf_screen_st
+    nop
+    addiu t6, t6, 1
+mf_screen_st:
+    jr    ra
+    sh    t6, 0x19A(s0)
+
+d6_t1_s0_t0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, d6_t1_s0_t0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, d6_t1_s0_t0_st
+    nop
+    addiu t0, t0, -1
+d6_t1_s0_t0_st:
+    jr    ra
+    sh    t0, 0x27E(s0)
+
+d6_t1_s0_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, d6_t1_s0_t1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, d6_t1_s0_t1_st
+    nop
+    addiu t1, t1, -1
+d6_t1_s0_t1_st:
+    jr    ra
+    sh    t1, 0x27E(s0)
+
+d6_t2_a0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, d6_t2_a0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, d6_t2_a0_t7_st
+    nop
+    addiu t7, t7, -1
+d6_t2_a0_t7_st:
+    jr    ra
+    sh    t7, 0x280(a0)
+
+d6_t1_a0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, d6_t1_a0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, d6_t1_a0_t8_st
+    nop
+    addiu t8, t8, -1
+d6_t1_a0_t8_st:
+    jr    ra
+    sh    t8, 0x27E(a0)
+
+d6_t2_a0_t0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, d6_t2_a0_t0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, d6_t2_a0_t0_st
+    nop
+    addiu t0, t0, -1
+d6_t2_a0_t0_st:
+    jr    ra
+    sh    t0, 0x280(a0)
+
+d6_t2_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, d6_t2_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, d6_t2_s0_t8_st
+    nop
+    addiu t8, t8, -1
+d6_t2_s0_t8_st:
+    jr    ra
+    sh    t8, 0x280(s0)
+
+d6_t1_s2_t4:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, d6_t1_s2_t4_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, d6_t1_s2_t4_st
+    nop
+    addiu t4, t4, -1
+d6_t1_s2_t4_st:
+    jr    ra
+    sh    t4, 0x27E(s2)
+
+d6_t2_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, d6_t2_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, d6_t2_s0_t7_st
+    nop
+    addiu t7, t7, -1
+d6_t2_s0_t7_st:
+    jr    ra
+    sh    t7, 0x280(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +837,104 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 67 injections ----
+.headersize 0x808B8370 - 0x00C55C10            ; ovl_Door_Shutter
+.org 0x808B9138
+    jal   ds_unlock
+.org 0x808B9290
+    jal   ds_action1
+.org 0x808B96AC
+    jal   ds_action2
+.headersize 0x809BBA50 - 0x00D4BBD0            ; ovl_Bg_Bdan_Objects
+.org 0x809BBE9C
+    jal   bd_t_s0_t9
+.org 0x809BBFD8
+    jal   bd_t_s0_t8
+.org 0x809BC040
+    jal   bd_t_s0_t6
+.org 0x809BC280
+    jal   bd_t_s0_t2
+.org 0x809BC2FC
+    jal   bd_t_a2_t7
+.org 0x809BC350
+    jal   bd_t_a0_t6
+.org 0x809BC628
+    jal   bd_t_s0_t6
+.org 0x809BC6AC
+    jal   bd_camChg
+.org 0x809BC868
+    jal   bd_t_a0_t6
+.org 0x809BC944
+    jal   bd_t_a3_t6
+.headersize 0x80A53DD0 - 0x00DD6810            ; ovl_Bg_Ganon_Otyuka
+.org 0x80A5456C
+    jal   gnO_flash
+.org 0x80A54574
+    jal   gnO_drop
+.headersize 0x80B66F40 - 0x00EE2670            ; ovl_Bg_Gnd_Darkmeiro
+.org 0x80B672AC
+    jal   dm_t1_s0
+.org 0x80B67350
+    jal   dm_t2
+.org 0x80B67470
+    jal   dm_t1_a2
+.headersize 0x80AC3EE0 - 0x00E43D20            ; ovl_Bg_Jya_Megami
+.org 0x80AC43F8
+    jal   jm_light_inc
+.org 0x80AC4470
+    jal   jm_light_dec
+.org 0x80AC4640
+    jal   jm_expl
+.headersize 0x809EDBB0 - 0x00D7B2B0            ; ovl_Bg_Mori_Hashigo
+.org 0x809EE18C
+    jal   mh_bounce
+.org 0x809EE200
+    jal   mh_hit
+.headersize 0x80885B00 - 0x00C233D0            ; ovl_En_Elf
+.org 0x80887360
+    jal   elf_disapp_t9
+.org 0x8088736C
+    jal   elf_disapp_t0
+.org 0x80888EC4
+    jal   elf_t_s0_t0
+.org 0x808894C8
+    jal   elf_t_s0_t3
+.org 0x808895B4
+    jal   elf_t_a0_t8
+.headersize 0x80A66210 - 0x00DE8C50            ; ovl_En_Wonder_Item
+.org 0x80A66BEC
+    jal   wi_t
+.headersize 0x8095D790 - 0x00CFAE20            ; ovl_Magic_Fire
+.org 0x8095D8BC
+    jal   mf_action_a2
+.org 0x8095DC70
+    jal   mf_action_s0
+.org 0x8095DC80
+    jal   mf_screen
+.headersize 0x80A2D260 - 0x00DB6D90            ; ovl_Demo_6K
+.org 0x80A2D854
+    jal   d6_t1_s0_t0
+.org 0x80A2D97C
+    jal   d6_t1_s0_t1
+.org 0x80A2D9B4
+    jal   d6_t2_a0_t7
+.org 0x80A2D9C0
+    jal   d6_t1_a0_t8
+.org 0x80A2DAE0
+    jal   d6_t2_a0_t0
+.org 0x80A2DD14
+    jal   d6_t2_a0_t7
+.org 0x80A2DE44
+    jal   d6_t2_s0_t8
+.org 0x80A2E164
+    jal   d6_t2_s0_t8
+.org 0x80A2E4C4
+    jal   d6_t1_s2_t4
+.org 0x80A2E6E0
+    jal   d6_t2_s0_t7
+.org 0x80A2E85C
+    jal   d6_t2_s0_t7
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
