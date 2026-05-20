@@ -276,6 +276,250 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 59: Diving Game + Dnt Demo + Kanban + Niw Lady + Niw Girl — tick-mod ----
+; Five minigame / NPC actors bundled (4+4+4+3+3 sites):
+;   En_Diving_Game (Zoras Domain rupee-diving): subCam, throw, eye, spawn timers
+;   En_Dnt_Demo (Forest Stage scrub-shooting minigame): judge, uT1, uT2, debugArrow
+;   En_Kanban (sign that can be cut): air, invinc, cutMark, zTarget
+;   En_Niw_Lady (Kakariko cucco lady): unused timers (still ticked)
+;   En_Niw_Girl (Kakariko cucco game girl): jumpTimer, unkUpTimer, blinkTimer
+; All ==0/!=0 gates. Tick-mod via Pattern E.
+
+dg_subCam:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dg_subCam_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dg_subCam_st
+    nop
+    addiu t8, t8, 1
+dg_subCam_st:
+    jr    ra
+    sh    t8, 0x284(s0)
+
+dg_throw:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dg_throw_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dg_throw_st
+    nop
+    addiu t9, t9, 1
+dg_throw_st:
+    jr    ra
+    sh    t9, 0x286(s0)
+
+dg_eye:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dg_eye_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dg_eye_st
+    nop
+    addiu t0, t0, 1
+dg_eye_st:
+    jr    ra
+    sh    t0, 0x288(s0)
+
+dg_spawn:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dg_spawn_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dg_spawn_st
+    nop
+    addiu t1, t1, 1
+dg_spawn_st:
+    jr    ra
+    sh    t1, 0x28A(s0)
+
+dnt_debugA:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dnt_debugA_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dnt_debugA_st
+    nop
+    addiu t4, t4, -1
+dnt_debugA_st:
+    jr    ra
+    sh    t4, 0x146(s0)
+
+dnt_judge:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dnt_judge_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dnt_judge_st
+    nop
+    addiu t6, t6, -1
+dnt_judge_st:
+    jr    ra
+    sh    t6, 0x140(s0)
+
+dnt_uT2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dnt_uT2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dnt_uT2_st
+    nop
+    addiu t6, t6, 1
+dnt_uT2_st:
+    jr    ra
+    sh    t6, 0x144(a0)
+
+dnt_uT1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dnt_uT1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dnt_uT1_st
+    nop
+    addiu t7, t7, 1
+dnt_uT1_st:
+    jr    ra
+    sh    t7, 0x142(a0)
+
+kn_invinc:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, kn_invinc_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, kn_invinc_st
+    nop
+    addiu t2, t2, 1
+kn_invinc_st:
+    jr    ra
+    sh    t2, 0x14A(s1)
+
+kn_zT:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, kn_zT_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, kn_zT_st
+    nop
+    addiu t3, t3, 1
+kn_zT_st:
+    jr    ra
+    sh    t3, 0x18A(s1)
+
+kn_cutMark:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, kn_cutMark_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, kn_cutMark_st
+    nop
+    addiu t7, t7, 1
+kn_cutMark_st:
+    jr    ra
+    sh    t7, 0x186(s1)
+
+kn_air:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, kn_air_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, kn_air_st
+    nop
+    addiu t7, t7, 1
+kn_air_st:
+    jr    ra
+    sh    t7, 0x142(s1)
+
+nl_uT2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, nl_uT2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, nl_uT2_st
+    nop
+    addiu t6, t6, 1
+nl_uT2_st:
+    jr    ra
+    sh    t6, 0x254(s0)
+
+nl_uR:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, nl_uR_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, nl_uR_st
+    nop
+    addiu t5, t5, 1
+nl_uR_st:
+    jr    ra
+    sh    t5, 0x256(s0)
+
+nl_uT:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, nl_uT_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, nl_uT_st
+    nop
+    addiu t8, t8, -1
+nl_uT_st:
+    jr    ra
+    sh    t8, 0x250(s0)
+
+ng_unkUp:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ng_unkUp_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ng_unkUp_st
+    nop
+    addiu t9, t9, -1
+ng_unkUp_st:
+    jr    ra
+    sh    t9, 0x25E(s0)
+
+ng_blink:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ng_blink_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ng_blink_st
+    nop
+    addiu t8, t8, 1
+ng_blink_st:
+    jr    ra
+    sh    t8, 0x264(s0)
+
+ng_jump:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, ng_jump_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, ng_jump_st
+    nop
+    addiu t9, t9, 1
+ng_jump_st:
+    jr    ra
+    sh    t9, 0x25C(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +582,49 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 59 injections ----
+.headersize 0x80A7DF00 - 0x00E00840            ; ovl_En_Diving_Game
+.org 0x80A7F244
+    jal   dg_subCam
+.org 0x80A7F254
+    jal   dg_throw
+.org 0x80A7F264
+    jal   dg_eye
+.org 0x80A7F274
+    jal   dg_spawn
+.headersize 0x80B4CF20 - 0x00EC8650            ; ovl_En_Dnt_Demo
+.org 0x80B4D1E0
+    jal   dnt_debugA
+.org 0x80B4D2F4
+    jal   dnt_judge
+.org 0x80B4DA24
+    jal   dnt_uT2
+.org 0x80B4DA34
+    jal   dnt_uT1
+.headersize 0x80AA1BA0 - 0x00E219F0            ; ovl_En_Kanban
+.org 0x80AA1EE0
+    jal   kn_invinc
+.org 0x80AA1EF0
+    jal   kn_zT
+.org 0x80AA2620
+    jal   kn_cutMark
+.org 0x80AA2C5C
+    jal   kn_air
+.headersize 0x80A9DF70 - 0x00E1DDC0            ; ovl_En_Niw_Lady
+.org 0x80A9F1E0
+    jal   nl_uT2
+.org 0x80A9F1F0
+    jal   nl_uR
+.org 0x80A9F204
+    jal   nl_uT
+.headersize 0x80B49380 - 0x00EC4AB0            ; ovl_En_Niw_Girl
+.org 0x80B499AC
+    jal   ng_unkUp
+.org 0x80B49AF4
+    jal   ng_blink
+.org 0x80B49B04
+    jal   ng_jump
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
