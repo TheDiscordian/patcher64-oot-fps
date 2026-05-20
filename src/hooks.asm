@@ -482,6 +482,45 @@ am_cd_done:
     jr    ra
     or    $a0, $s0, $zero                      ; (delay slot) original move $a0, $s0
 
+; ---- Boss_Goma intro pacing fix (frameCount tick-mod) ----
+; User-reported: Gohma's boss-intro cutscene plays "almost twice as fast" at
+; 30 fps stock. Trace: BossGoma_Update (z_boss_goma.c:1930, RAM 0x808ABCF8)
+; increments this->frameCount (s16 @ struct 0x184, header 0x194 - shift -0x10)
+; once per Update. The intro state machine (action state 2) keys cadence off
+; `frameCount == 176` (Door_Shutter spawn + lighting change), `== 190` (player
+; cs-action), `>= 228` (camera return + Cutscene_StopManual). At 30 fps stock
+; those fire 1.5x sooner. (Gohma uses Cutscene_StartManual + actor-local
+; frameCount, not the scripted-cutscene path covered by PR #77.)
+;
+; Fix: tick-mod the frameCount++ via frame_phase. Same family as Bucket 7 /
+; PR #77 cutscene curFrame.
+;
+; Injection point: the C `this->frameCount++;` compiles to
+;   0x808ABD0C: lh    r15, 0x184(s0)        ; r15 = frameCount
+;   0x808ABD18: addiu r24, r15, 1           ; r24 = r15 + 1
+;   ...
+;   0x808ABD24: sh    r24, 0x184(s0)        ; (delay slot of beq above) frameCount = r24
+; We hook the addiu at 0x808ABD18 (jal -> hook). Delay slot 0x808ABD1C is
+; `sh r14, 0x1A8(s0)` - safe, independent store. Hook conditionally computes
+; r24 = r15+1 (normal/20fps/phase!=0) or r24 = r15 (30fps phase 0, tick skip).
+; The downstream `sh r24, 0x184(s0)` at 0x808ABD24 (delay slot of the beq at
+; 0x808ABD20) then writes the right value to frameCount.
+en_goma_framecount_tick:
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, gft_inc                          ; 20 fps -> always increment
+    nop
+    lui   t0, 0x801C
+    lbu   t0, 0x6FB4(t0)                       ; frame_phase
+    beqz  t0, gft_skip                         ; phase 0 -> skip increment
+    nop
+gft_inc:
+    jr    ra
+    addiu t8, t7, 1                            ; (delay slot) r24 = r15 + 1  (t7=r15, t8=r24)
+gft_skip:
+    jr    ra
+    or    t8, t7, zero                         ; (delay slot) r24 = r15 (no inc)
+
 
 ; ---- Debug-save playerName init wrapper ----
 ; Retail NTSC 1.0's Sram_InitDebugSave assigns the Japanese-encoded name
@@ -610,6 +649,10 @@ sram_init_w_name:
     jal   goma_patience_1_seed
 .org 0x808AAA98                                ; was `li t7,200` (patienceTimer=200 site 2)
     jal   goma_patience_2_seed
+
+; Boss_Goma intro pacing — BossGoma_Update frameCount++ tick-mod
+.org 0x808ABD18                                ; was `addiu r24, r15, 1` (frameCount + 1)
+    jal   en_goma_framecount_tick
 
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
