@@ -276,6 +276,183 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 42: En_Mb (Moblin) AI timers — tick-mod ----
+; Moblins have 4 timer fields: iceEffectTimer, timer1, timer2, timer3.
+; Source uses mostly == 0 / != 0 / > 0 gates plus skelAnime.curFrame
+; correlation (timer3 != 0 && curFrame == 6.0f). Tick-mod via Pattern E
+; keeps the timer descent in step with the rest of the game logic.
+; 16 decrement sites, ~13 unique (reg, base) hook variants.
+
+mb_t1_a2_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_t1_a2_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_t1_a2_t6_st
+    nop
+    addiu t6, t6, 1
+mb_t1_a2_t6_st:
+    jr    ra
+    sh    t6, 0x31A(a2)
+
+mb_t3_s0_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_t3_s0_t1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_t3_s0_t1_st
+    nop
+    addiu t1, t1, 1
+mb_t3_s0_t1_st:
+    jr    ra
+    sh    t1, 0x31E(s0)
+
+mb_t3_s0_t3:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_t3_s0_t3_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_t3_s0_t3_st
+    nop
+    addiu t3, t3, 1
+mb_t3_s0_t3_st:
+    jr    ra
+    sh    t3, 0x31E(s0)
+
+mb_t3_s0_t0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_t3_s0_t0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_t3_s0_t0_st
+    nop
+    addiu t0, t0, 1
+mb_t3_s0_t0_st:
+    jr    ra
+    sh    t0, 0x31E(s0)
+
+mb_t3_s0_t2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_t3_s0_t2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_t3_s0_t2_st
+    nop
+    addiu t2, t2, 1
+mb_t3_s0_t2_st:
+    jr    ra
+    sh    t2, 0x31E(s0)
+
+mb_t3_s0_t9:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_t3_s0_t9_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_t3_s0_t9_st
+    nop
+    addiu t9, t9, 1
+mb_t3_s0_t9_st:
+    jr    ra
+    sh    t9, 0x31E(s0)
+
+mb_t3_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_t3_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_t3_s0_t7_st
+    nop
+    addiu t7, t7, 1
+mb_t3_s0_t7_st:
+    jr    ra
+    sh    t7, 0x31E(s0)
+
+mb_t3_s0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_t3_s0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_t3_s0_t6_st
+    nop
+    addiu t6, t6, 1
+mb_t3_s0_t6_st:
+    jr    ra
+    sh    t6, 0x31E(s0)
+
+mb_t1_s2_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_t1_s2_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_t1_s2_t6_st
+    nop
+    addiu t6, t6, 1
+mb_t1_s2_t6_st:
+    jr    ra
+    sh    t6, 0x31A(s2)
+
+mb_t2_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_t2_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_t2_s0_t8_st
+    nop
+    addiu t8, t8, 1
+mb_t2_s0_t8_st:
+    jr    ra
+    sh    t8, 0x31C(s0)
+
+mb_t1_s0_t2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_t1_s0_t2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_t1_s0_t2_st
+    nop
+    addiu t2, t2, 1
+mb_t1_s0_t2_st:
+    jr    ra
+    sh    t2, 0x31A(s0)
+
+mb_t1_s1_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_t1_s1_t1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_t1_s1_t1_st
+    nop
+    addiu t1, t1, 1
+mb_t1_s1_t1_st:
+    jr    ra
+    sh    t1, 0x31A(s1)
+
+mb_ice_s5_t5:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_ice_s5_t5_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_ice_s5_t5_st
+    nop
+    addiu t5, t5, 1
+mb_ice_s5_t5_st:
+    jr    ra
+    sh    t5, 0x318(s5)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +515,41 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 42 injections ----
+.headersize 0x808E5D40 - 0x00C83500            ; ovl_En_Mb
+.org 0x808E6E70
+    jal   mb_t1_a2_t6
+.org 0x808E70B8
+    jal   mb_t3_s0_t1
+.org 0x808E7260
+    jal   mb_t3_s0_t3
+.org 0x808E750C
+    jal   mb_t3_s0_t0
+.org 0x808E77A0
+    jal   mb_t3_s0_t2
+.org 0x808E79E4
+    jal   mb_t3_s0_t9
+.org 0x808E7F88
+    jal   mb_t3_s0_t7
+.org 0x808E80BC
+    jal   mb_t3_s0_t6
+.org 0x808E82BC
+    jal   mb_t1_s2_t6
+.org 0x808E8644
+    jal   mb_t2_s0_t8
+.org 0x808E8658
+    jal   mb_t3_s0_t9
+.org 0x808E8678
+    jal   mb_t1_s0_t2
+.org 0x808E8938
+    jal   mb_t2_s0_t8
+.org 0x808E8948
+    jal   mb_t3_s0_t9
+.org 0x808E8DD8
+    jal   mb_t1_s1_t1
+.org 0x808E9764
+    jal   mb_ice_s5_t5
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
