@@ -276,6 +276,63 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 34: Bg_Po_Event timer — tick-mod ----
+; Forest Temple "Poe-painting" puzzle blocks. The timer field gates
+; the puzzle reset window. Source has many value-keyed checks:
+;   timer < 15 (jiggle/shake phase)
+;   timer % 3 (X-position oscillation amplitude)
+;   timer % 4 (sound trigger gate)
+;   timer == 0 (puzzle reset trigger)
+;   Interface_SetTimer(timer) (HUD display)
+; Tick-mod via Pattern E preserves value sequence so the jiggle and
+; SFX cadence are wall-clock-correct on 30 fps. The +=10 reward boost
+; at 0x80943924 is intentionally left untouched - it is a one-shot
+; event credit that already evaluates to the same wall-clock duration
+; under tick-mod (10 internal frames -> 15 real frames at 30 fps =
+; 0.5s = 20 fps wall-clock for the same +=10).
+;
+; 4 -- decrement sites. 3 unique (reg, base) variants.
+
+poe_timer_a0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, poe_timer_a0_t6_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, poe_timer_a0_t6_store
+    nop
+    addiu t6, t6, 1                            ; phase 0 -> undo
+poe_timer_a0_t6_store:
+    jr    ra
+    sh    t6, 0x15C(a0)                       ; (delay slot) original sh
+
+poe_timer_s0_t5:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, poe_timer_s0_t5_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, poe_timer_s0_t5_store
+    nop
+    addiu t5, t5, 1                            ; phase 0 -> undo
+poe_timer_s0_t5_store:
+    jr    ra
+    sh    t5, 0x15C(s0)                       ; (delay slot) original sh
+
+poe_timer_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, poe_timer_s0_t7_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, poe_timer_s0_t7_store
+    nop
+    addiu t7, t7, 1                            ; phase 0 -> undo
+poe_timer_s0_t7_store:
+    jr    ra
+    sh    t7, 0x15C(s0)                       ; (delay slot) original sh
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +395,17 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 34 injections ----
+.headersize 0x80942920 - 0x00CE0040            ; ovl_Bg_Po_Event
+.org 0x80943104                                ; was sh t6,0x15C(a0)
+    jal   poe_timer_a0_t6
+.org 0x80943B4C                                ; was sh t5,0x15C(s0)
+    jal   poe_timer_s0_t5
+.org 0x80943D04                                ; was sh t7,0x15C(s0)
+    jal   poe_timer_s0_t7
+.org 0x80943F58                                ; was sh t7,0x15C(s0)
+    jal   poe_timer_s0_t7
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
