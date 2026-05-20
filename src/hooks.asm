@@ -276,6 +276,211 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 53: En_Test + En_Wallmas + En_Sb + En_Vm + En_Brob — tick-mod ----
+; Five enemies bundled (7+1+2+3+3 sites):
+;   En_Test (Stalfos): timer (s32 sw, 6 sites) + iceTimer (s16 sh)
+;   En_Wallmas (Wallmaster - drop ceiling enemy): timer
+;   En_Sb (Shellblade - Jabu-Jabu clam enemy): timer x2 sites
+;   En_Vm (Beamos - eye laser): timer s32 x3 sites
+;   En_Brob (Brob - Forest Temple flame trap): timer x3 sites
+; All ==0/!=0 gates. Tick-mod via Pattern E.
+
+st_t_a2_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, st_t_a2_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, st_t_a2_t8_st
+    nop
+    addiu t8, t8, 1
+st_t_a2_t8_st:
+    jr    ra
+    sw    t8, 0x7D8(a2)
+
+st_t_s0_t3:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, st_t_s0_t3_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, st_t_s0_t3_st
+    nop
+    addiu t3, t3, 1
+st_t_s0_t3_st:
+    jr    ra
+    sw    t3, 0x7D8(s0)
+
+st_t_s0_t8i:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, st_t_s0_t8i_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, st_t_s0_t8i_st
+    nop
+    addiu t8, t8, -1
+st_t_s0_t8i_st:
+    jr    ra
+    sw    t8, 0x7D8(s0)
+
+st_t_s0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, st_t_s0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, st_t_s0_t6_st
+    nop
+    addiu t6, t6, 1
+st_t_s0_t6_st:
+    jr    ra
+    sw    t6, 0x7D8(s0)
+
+st_t_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, st_t_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, st_t_s0_t7_st
+    nop
+    addiu t7, t7, 1
+st_t_s0_t7_st:
+    jr    ra
+    sw    t7, 0x7D8(s0)
+
+st_t_s0_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, st_t_s0_t1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, st_t_s0_t1_st
+    nop
+    addiu t1, t1, 1
+st_t_s0_t1_st:
+    jr    ra
+    sw    t1, 0x7D8(s0)
+
+st_ice:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, st_ice_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, st_ice_st
+    nop
+    addiu t4, t4, 1
+st_ice_st:
+    jr    ra
+    sh    t4, 0x7D0(s0)
+
+wm_t:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, wm_t_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, wm_t_st
+    nop
+    addiu t6, t6, 1
+wm_t_st:
+    jr    ra
+    sh    t6, 0x184(a2)
+
+sb_t_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, sb_t_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, sb_t_s0_t7_st
+    nop
+    addiu t7, t7, 1
+sb_t_s0_t7_st:
+    jr    ra
+    sh    t7, 0x1EE(s0)
+
+sb_t_a0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, sb_t_a0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, sb_t_a0_t6_st
+    nop
+    addiu t6, t6, 1
+sb_t_a0_t6_st:
+    jr    ra
+    sh    t6, 0x1EE(a0)
+
+vm_t_s0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, vm_t_s0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, vm_t_s0_t6_st
+    nop
+    addiu t6, t6, 1
+vm_t_s0_t6_st:
+    jr    ra
+    sw    t6, 0x210(s0)
+
+vm_t_s0_t2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, vm_t_s0_t2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, vm_t_s0_t2_st
+    nop
+    addiu t2, t2, 1
+vm_t_s0_t2_st:
+    jr    ra
+    sw    t2, 0x210(s0)
+
+vm_t_s0_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, vm_t_s0_t1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, vm_t_s0_t1_st
+    nop
+    addiu t1, t1, 1
+vm_t_s0_t1_st:
+    jr    ra
+    sw    t1, 0x210(s0)
+
+br_t_s0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, br_t_s0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, br_t_s0_t6_st
+    nop
+    addiu t6, t6, 1
+br_t_s0_t6_st:
+    jr    ra
+    sh    t6, 0x19C(s0)
+
+br_t_s1_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, br_t_s1_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, br_t_s1_t6_st
+    nop
+    addiu t6, t6, 1
+br_t_s1_t6_st:
+    jr    ra
+    sh    t6, 0x19C(s1)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +543,45 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 53 injections ----
+.headersize 0x8085D350 - 0x00BFAC30            ; ovl_En_Test
+.org 0x8085DC0C
+    jal   st_t_a2_t8
+.org 0x8085DEF8
+    jal   st_t_s0_t3
+.org 0x8085E258
+    jal   st_t_s0_t8i
+.org 0x8085F118
+    jal   st_t_s0_t6
+.org 0x8085F760
+    jal   st_t_s0_t7
+.org 0x8085FD5C
+    jal   st_t_s0_t1
+.org 0x80861DE8
+    jal   st_ice
+.headersize 0x808718D0 - 0x00C0F1A0            ; ovl_En_Wallmas
+.org 0x808729B0
+    jal   wm_t
+.headersize 0x809B6210 - 0x00D46390            ; ovl_En_Sb
+.org 0x809B6948
+    jal   sb_t_s0_t7
+.org 0x809B6C50
+    jal   sb_t_a0_t6
+.headersize 0x80929410 - 0x00CC6B80            ; ovl_En_Vm
+.org 0x809297F8
+    jal   vm_t_s0_t6
+.org 0x80929E28
+    jal   vm_t_s0_t2
+.org 0x80929F90
+    jal   vm_t_s0_t1
+.headersize 0x80981540 - 0x00D1EBD0            ; ovl_En_Brob
+.org 0x80981AA8
+    jal   br_t_s0_t6
+.org 0x80981CA8
+    jal   br_t_s0_t6
+.org 0x80981EFC
+    jal   br_t_s1_t6
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
