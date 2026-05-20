@@ -276,6 +276,30 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 14: Forest Temple falling-block (Bg_Mori_Rakkatenjo) tick-mod ----
+; Bg_Mori_Rakkatenjo's `timer` (s32 @ 0x158, header /* 0x168 */ — same -0x10
+; shift) gates: pre-fall countdown (seed 21 or 100), SFX pre-warning fired
+; via `if (timer < 20)` (z_bg_mori_rakkatenjo.c:138/146/154), and post-rest
+; pause (seed 20). The hard-coded `< 20` threshold means seed-mod would
+; mis-distribute the SFX warning portion. tick-mod keeps timer in original
+; range and stretches wall-clock.
+;
+; Single decrement site at 0x80929114 (the top of BgMoriRakkatenjo_Update).
+; Field type is s32, so we use lw/sw (not lh/sh).
+
+mori_rakka_tick:                               ; replaces sw t6,344(a2) at 0x80929114
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, mrt_store                        ; 20 fps -> always decrement
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; global frame phase
+    bnez  t2, mrt_store                        ; phase 1/2 -> decrement
+    nop
+    addiu t6, t6, 1                            ; phase 0 -> undo decrement
+mrt_store:
+    jr    ra
+    sw    t6, 0x158(a2)                        ; (delay slot) authoritative store
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +362,11 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 14 — ovl_Bg_Mori_Rakkatenjo (Forest Temple falling block)
+.headersize 0x80928AA0 - 0x00CC6210
+.org 0x80929114                                ; was `sw t6,344(a2)` in BgMoriRakkatenjo_Update
+    jal   mori_rakka_tick
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
