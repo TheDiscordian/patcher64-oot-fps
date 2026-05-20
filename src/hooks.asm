@@ -276,6 +276,37 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 15: Arrow Trap (En_Arow_Trap) attackTimer seed-mod ----
+; Arrow Trap fires an arrow at the player every attackTimer frames. Seed 80
+; at both Init and the reseed-after-fire site. Source has only `== 0` check,
+; so seed-mod is sound. 80 -> 120 at 30 fps matches 4 s cadence.
+; struct.attackTimer is s32 (sw/lw), at offset 0x140 (header /* 0x150 */).
+
+arow_seed_init:                                ; replaces li t6,80 at 0x80921600
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, asi_done                         ; 20 fps -> keep t6 = 80
+    li    t6, 80                               ; (delay slot) original
+    li    t6, 120                              ; 30 fps -> 80 * 1.5
+asi_done:
+    jr    ra
+    nop
+
+; Site 2 sits inside the function epilogue — `sw t3,320(s0)` is at PC+4 and
+; `lw ra,52(sp)` at PC+8. Can't patch the sw (would clobber ra via the
+; load-in-delay-slot of our jal). Patch the `li t3,80` instead — the
+; delay-slot sw fires with stale t3 (garbage value briefly in memory) and the
+; hook then does the authoritative store to overwrite.
+arow_seed_reseed:                              ; replaces li t3,80 at 0x809216BC
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, asr_store                        ; 20 fps -> rewrite with 80
+    li    t3, 80                               ; (delay slot) 20 fps value
+    li    t3, 120                              ; 30 fps -> 80 * 1.5
+asr_store:
+    jr    ra
+    sw    t3, 0x140(s0)                        ; (delay slot) authoritative store
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +369,13 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 15 — ovl_En_Arow_Trap (Arrow Trap shooter attackTimer)
+.headersize 0x809215E0 - 0x00CBED50
+.org 0x80921600                                ; was `li t6,80` in EnArowTrap_Init
+    jal   arow_seed_init
+.org 0x809216BC                                ; was `li t3,80` in EnArowTrap_Update (reseed)
+    jal   arow_seed_reseed
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
