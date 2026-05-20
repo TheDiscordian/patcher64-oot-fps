@@ -276,6 +276,40 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+
+; ---- B11 Armos lunge/death animation fix (stock 30 fps bug) ----
+; User-confirmed: on stock Patcher64+ Redux 30 fps, Armos "humps the ground"
+; on attack lunge and "hops once then spins in place" during death sequence.
+;
+; Root cause: in EnAm_Lunge, when curFrame > 11 mid-air, the code clamps
+; curFrame to 11 to hold the animation. At 30 fps, B2 gravity (2/3 scale) is
+; correct in wall-clock terms, but the actor stays airborne for MORE Update
+; ticks - each of which clamps curFrame to 11. When Armos lands, SkelAnime
+; immediately advances curFrame from 11 by +4 = 15, which wraps (animLength
+; 12) to 3. The subsequent cycle is 3 -> 7 -> 11 -> 15->3 - NEVER 8, so the
+; `curFrame == 8.0f` trigger that fires velocity.y=12 + speed=6 never fires
+; again. Armos visibly "humps" (in-place hop) then spins.
+;
+; At 20 fps with full gravity, Armos lands fast enough that the clamp-to-11
+; doesn't take effect mid-cycle: curFrame overshoots to 12 cleanly, wraps to
+; 0, then 4, 8 - hops again. Cadence works.
+;
+; Fix: at the moment of landing (the `else { ... land logic }` branch in
+; EnAm_Lunge), force curFrame=0.0f at 30 fps so the next cycle starts clean.
+; Hook the existing `sh zero, 0x254(s0)` (unk_264=0) store in the landing
+; block - it runs once per landing, perfect.
+
+en_am_land_fix:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, am_done                          ; 20 fps -> original behaviour
+    nop
+    sw    zero, 0x16C(s0)                      ; 30 fps -> curFrame = 0.0f
+am_done:
+    jr    ra
+    sh    zero, 0x254(s0)                      ; (delay slot) original unk_264=0
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +372,13 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+
+; ---- B11 Armos landing-curFrame-reset injection ----
+.headersize 0x808F9080 - 0x00C96840            ; ovl_En_Am
+.org 0x808FA350                                ; was `sh zero,0x254(s0)` in EnAm_Lunge landing branch
+    jal   en_am_land_fix
+
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
