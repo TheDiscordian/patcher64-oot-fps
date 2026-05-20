@@ -276,6 +276,196 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 50: Boss_Ganon (Ganondorf) + Boss_Ganondrof (Phantom Ganon) — tick-mod ----
+; Boss_Ganon (Tower fight 1): timers[5] loop covered via 4 sh sites
+;   (one per Update fn); plus csTimer (++, s32 sw), unk_19C/_26C/_2D4/
+;   _2E6/_2E8 (timer-tagged sh fields), screenFlashTimer, lensFlareTimer.
+; Boss_Ganondrof (Phantom Ganon): timers[5] loop covered via 1 sh.
+; Tick-mod via Pattern E for all 14 sites.
+
+gn_csTimer_inc1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_csTimer_inc1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_csTimer_inc1_st
+    nop
+    addiu t7, t7, -1
+gn_csTimer_inc1_st:
+    jr    ra
+    sw    t7, 0x664(s0)
+
+gn_csTimer_inc2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_csTimer_inc2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_csTimer_inc2_st
+    nop
+    addiu t4, t4, -1
+gn_csTimer_inc2_st:
+    jr    ra
+    sw    t4, 0x664(s0)
+
+gn_loop1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_loop1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_loop1_st
+    nop
+    addiu t5, t5, 1
+gn_loop1_st:
+    jr    ra
+    sh    t5, 0x1A6(v0)
+
+gn_u2D4:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_u2D4_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_u2D4_st
+    nop
+    addiu t7, t7, 1
+gn_u2D4_st:
+    jr    ra
+    sh    t7, 0x2C4(s5)
+
+gn_u2E8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_u2E8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_u2E8_st
+    nop
+    addiu t8, t8, 1
+gn_u2E8_st:
+    jr    ra
+    sh    t8, 0x2D8(s5)
+
+gn_u2E6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_u2E6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_u2E6_st
+    nop
+    addiu t9, t9, 1
+gn_u2E6_st:
+    jr    ra
+    sh    t9, 0x2D6(s5)
+
+gn_u19C:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_u19C_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_u19C_st
+    nop
+    addiu t0, t0, 1
+gn_u19C_st:
+    jr    ra
+    sh    t0, 0x18C(s5)
+
+gn_u26C:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_u26C_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_u26C_st
+    nop
+    addiu t7, t7, 1
+gn_u26C_st:
+    jr    ra
+    sh    t7, 0x25C(s5)
+
+gn_flash:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_flash_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_flash_st
+    nop
+    addiu t3, t3, 1
+gn_flash_st:
+    jr    ra
+    sh    t3, 0x1B4(s5)
+
+gn_lensF:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_lensF_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_lensF_st
+    nop
+    addiu t5, t5, 1
+gn_lensF_st:
+    jr    ra
+    sh    t5, 0x65E(s5)
+
+gn_loop2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_loop2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_loop2_st
+    nop
+    addiu t7, t7, 1
+gn_loop2_st:
+    jr    ra
+    sh    t7, 0x1A6(v0)
+
+gn_loop3:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_loop3_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_loop3_st
+    nop
+    addiu t7, t7, 1
+gn_loop3_st:
+    jr    ra
+    sh    t7, 0x1A6(v0)
+
+gn_loop4:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_loop4_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_loop4_st
+    nop
+    addiu t1, t1, 1
+gn_loop4_st:
+    jr    ra
+    sh    t1, 0x1A6(v0)
+
+gn_loop:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, gn_loop_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, gn_loop_st
+    nop
+    addiu t4, t4, 1
+gn_loop_st:
+    jr    ra
+    sh    t4, 0x1AC(v1)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +528,38 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 50 injections ----
+.headersize 0x809F1D00 - 0x00D7F3F0            ; ovl_Ganon
+.org 0x809F2E58
+    jal   gn_csTimer_inc1
+.org 0x809F4840
+    jal   gn_csTimer_inc2
+.org 0x809F8D24
+    jal   gn_loop1
+.org 0x809F8D54
+    jal   gn_u2D4
+.org 0x809F8D64
+    jal   gn_u2E8
+.org 0x809F8D74
+    jal   gn_u2E6
+.org 0x809F8D84
+    jal   gn_u19C
+.org 0x809F909C
+    jal   gn_u26C
+.org 0x809F99B0
+    jal   gn_flash
+.org 0x809F99E0
+    jal   gn_lensF
+.org 0x809FC48C
+    jal   gn_loop2
+.org 0x809FD19C
+    jal   gn_loop2
+.org 0x809FD7A0
+    jal   gn_loop4
+.headersize 0x808F4310 - 0x00C91AD0            ; ovl_Ganondrof
+.org 0x808F7AC8
+    jal   gn_loop
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
