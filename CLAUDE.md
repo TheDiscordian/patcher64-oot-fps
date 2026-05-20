@@ -216,5 +216,15 @@ Buckets 4 & 5. See Status above.
   test order; (b) verify the location actually PERMITS the test — the Temple of
   Time, Castle Town and similar scenes restrict bombs and most held items, so a
   "throw a bomb here" test silently cannot run there.
+- **Before launching ares, kill any existing ares instance first.** Multiple
+  instances stacking confuses the user — they lose track of which window is
+  the new build. Standard relaunch sequence:
+  ```bash
+  pkill -9 -f "ares.*oot-redux" 2>/dev/null; sleep 1
+  ares --system N64 work/oot-redux-30fps.z64 > /tmp/ares.log 2>&1 &
+  disown
+  ```
+  Use `-9` (SIGKILL) on the pkill — plain SIGTERM doesn't always close ares
+  cleanly. `disown` keeps the new instance alive after the bash session ends.
 - Keep this file, `PROGRESS.md`, and `work/PAYLOAD_ANALYSIS.md` honest and
   current — a stale "recommendation" here will cause repeated work.
