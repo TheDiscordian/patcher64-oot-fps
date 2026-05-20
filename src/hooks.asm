@@ -276,6 +276,82 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 43: En_Tite + En_Tk small AI timers — tick-mod ----
+; Two enemies bundled (1 + 4 sites):
+;   En_Tite (Tektite): spawnIceTimer (ice-burst death effect)
+;   En_Tk (Heart of Stone / Dampe gravedigging tour minigame):
+;     rewardTimer (++) - "show me the reward" cadence
+;     actionCountdown (--) - hint/dig state-machine gate
+;     blinkCountdown (--) - eye-blink animation
+; All use simple == 0 / != 0 / > 0 gates. Tick-mod via Pattern E for
+; uniformity with the rest of the small-bucket sweep.
+
+spawnice_dec_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, spawnice_dec_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, spawnice_dec_s0_t8_st
+    nop
+    addiu t8, t8, 1
+spawnice_dec_s0_t8_st:
+    jr    ra
+    sb    t8, 0x2D3(s0)
+
+blink_dec_a2_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, blink_dec_a2_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, blink_dec_a2_t6_st
+    nop
+    addiu t6, t6, 1
+blink_dec_a2_t6_st:
+    jr    ra
+    sh    t6, 0x214(a2)
+
+action_dec_s0_t0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, action_dec_s0_t0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, action_dec_s0_t0_st
+    nop
+    addiu t0, t0, 1
+action_dec_s0_t0_st:
+    jr    ra
+    sh    t0, 0x20C(s0)
+
+action_dec_s0_t9:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, action_dec_s0_t9_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, action_dec_s0_t9_st
+    nop
+    addiu t9, t9, 1
+action_dec_s0_t9_st:
+    jr    ra
+    sh    t9, 0x20C(s0)
+
+reward_inc_s0_t2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, reward_inc_s0_t2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, reward_inc_s0_t2_st
+    nop
+    addiu t2, t2, -1
+reward_inc_s0_t2_st:
+    jr    ra
+    sh    t2, 0x20A(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +414,20 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 43 injections ----
+.headersize 0x8088D7F0 - 0x00C2B0C0            ; ovl_En_Tite
+.org 0x80890210                                ; was sb t8,0x2D3(s0) (spawnIce --)
+    jal   spawnice_dec_s0_t8
+.headersize 0x809251F0 - 0x00CC2960            ; ovl_En_Tk
+.org 0x809258D8                                ; was sh t6,0x214(a2) (blink --)
+    jal   blink_dec_a2_t6
+.org 0x8092665C                                ; was sh t0,0x20C(s0) (action --)
+    jal   action_dec_s0_t0
+.org 0x8092676C                                ; was sh t9,0x20C(s0) (action --)
+    jal   action_dec_s0_t9
+.org 0x809269A8                                ; was sh t2,0x20A(s0) (reward ++)
+    jal   reward_inc_s0_t2
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
