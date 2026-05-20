@@ -276,6 +276,54 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 39: Bg_Spot15_Saku + Bg_Spot03_Taki timers — tick-mod ----
+; Two small Bg actors. Saku is the Hyrule Castle moat gate that opens
+; on Zelda escape. Taki is the Zoras River waterfall cosmetic actor.
+; Both have a single s16 timer field; only ==0/!=0/<0 checks in source
+; (no value-keyed formulas) so seed-mod would also work, but using
+; tick-mod (Pattern E) for uniformity with the other small-bucket fixes.
+; 3 sites total: Saku 1 (a0,t6), Taki 2 (s0,t9 + s0,t5).
+
+saku_a0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, saku_a0_t6_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, saku_a0_t6_store
+    nop
+    addiu t6, t6, 1                            ; phase 0 -> undo
+saku_a0_t6_store:
+    jr    ra
+    sh    t6, 0x16C(a0)                       ; (delay slot) original sh
+
+taki_s0_t9:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, taki_s0_t9_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, taki_s0_t9_store
+    nop
+    addiu t9, t9, 1                            ; phase 0 -> undo
+taki_s0_t9_store:
+    jr    ra
+    sh    t9, 0x158(s0)                       ; (delay slot) original sh
+
+taki_s0_t5:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, taki_s0_t5_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, taki_s0_t5_store
+    nop
+    addiu t5, t5, 1                            ; phase 0 -> undo
+taki_s0_t5_store:
+    jr    ra
+    sh    t5, 0x158(s0)                       ; (delay slot) original sh
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +386,16 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 39 injections ----
+.headersize 0x80A312D0 - 0x00DBADF0            ; ovl_Bg_Spot15_Saku
+.org 0x80A314D0                                ; was sh t6,0x16C(a0)
+    jal   saku_a0_t6
+.headersize 0x80A79180 - 0x00DFBAC0            ; ovl_Bg_Spot03_Taki
+.org 0x80A7961C                                ; was sh t9,0x158(s0)
+    jal   taki_s0_t9
+.org 0x80A796C4                                ; was sh t5,0x158(s0)
+    jal   taki_s0_t5
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
