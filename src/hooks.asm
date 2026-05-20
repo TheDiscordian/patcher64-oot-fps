@@ -276,6 +276,308 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 72: 15 actors (37 sites) — common enemies + NPCs + items ----
+
+b72_arms_hook_t9_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_arms_hook_t9_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_arms_hook_t9_s0_d_st
+    nop
+    addiu t9, t9, 1
+b72_arms_hook_t9_s0_d_st:
+    jr    ra
+    sh    t9, 0x200(s0)
+
+b72_firefly_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_firefly_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_firefly_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+b72_firefly_t6_s0_d_st:
+    jr    ra
+    sh    t6, 0x1AA(s0)
+
+b72_firefly_t2_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_firefly_t2_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_firefly_t2_s0_d_st
+    nop
+    addiu t2, t2, 1
+b72_firefly_t2_s0_d_st:
+    jr    ra
+    sh    t2, 0x1AA(s0)
+
+b72_firefly_t8_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_firefly_t8_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_firefly_t8_s0_d_st
+    nop
+    addiu t8, t8, 1
+b72_firefly_t8_s0_d_st:
+    jr    ra
+    sh    t8, 0x1AA(s0)
+
+b72_eiyer_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_eiyer_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_eiyer_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+b72_eiyer_t6_s0_d_st:
+    jr    ra
+    sh    t6, 0x184(s0)
+
+b72_eiyer_t3_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_eiyer_t3_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_eiyer_t3_s0_d_st
+    nop
+    addiu t3, t3, 1
+b72_eiyer_t3_s0_d_st:
+    jr    ra
+    sh    t3, 0x184(s0)
+
+b72_eiyer_t8_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_eiyer_t8_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_eiyer_t8_s0_d_st
+    nop
+    addiu t8, t8, 1
+b72_eiyer_t8_s0_d_st:
+    jr    ra
+    sh    t8, 0x184(s0)
+
+b72_arrow_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_arrow_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_arrow_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+b72_arrow_t6_s0_d_st:
+    jr    ra
+    sb    t6, 0x238(s0)
+
+b72_arrow_t6_a1_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_arrow_t6_a1_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_arrow_t6_a1_d_st
+    nop
+    addiu t6, t6, 1
+b72_arrow_t6_a1_d_st:
+    jr    ra
+    sb    t6, 0x238(a1)
+
+b72_daiku_t1_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_daiku_t1_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_daiku_t1_s0_d_st
+    nop
+    addiu t1, t1, 1
+b72_daiku_t1_s0_d_st:
+    jr    ra
+    sw    t1, 0x1F0(s0)
+
+b72_daiku_k_t7_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_daiku_k_t7_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_daiku_k_t7_s0_d_st
+    nop
+    addiu t7, t7, 1
+b72_daiku_k_t7_s0_d_st:
+    jr    ra
+    sw    t7, 0x2E8(s0)
+
+b72_du_t6_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_du_t6_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_du_t6_a2_d_st
+    nop
+    addiu t6, t6, 1
+b72_du_t6_a2_d_st:
+    jr    ra
+    sh    t6, 0x1E2(a2)
+
+b72_ds_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_ds_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_ds_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+b72_ds_t6_s0_d_st:
+    jr    ra
+    sh    t6, 0x1DA(s0)
+
+b72_ds_t6_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_ds_t6_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_ds_t6_a2_d_st
+    nop
+    addiu t6, t6, 1
+b72_ds_t6_a2_d_st:
+    jr    ra
+    sh    t6, 0x1DA(a2)
+
+b72_dns_t7_s0_i:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_dns_t7_s0_i_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_dns_t7_s0_i_st
+    nop
+    addiu t7, t7, -1
+b72_dns_t7_s0_i_st:
+    jr    ra
+    sh    t7, 0x2A8(s0)
+
+b72_ge3_t6_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_ge3_t6_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_ge3_t6_a2_d_st
+    nop
+    addiu t6, t6, 1
+b72_ge3_t6_a2_d_st:
+    jr    ra
+    sh    t6, 0x2EE(a2)
+
+b72_heishi3_t8_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_heishi3_t8_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_heishi3_t8_s0_d_st
+    nop
+    addiu t8, t8, 1
+b72_heishi3_t8_s0_d_st:
+    jr    ra
+    sh    t8, 0x262(s0)
+
+b72_dekunuts_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_dekunuts_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_dekunuts_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+b72_dekunuts_t6_s0_d_st:
+    jr    ra
+    sh    t6, 0x186(s0)
+
+b72_dekunuts_t6_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_dekunuts_t6_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_dekunuts_t6_a2_d_st
+    nop
+    addiu t6, t6, 1
+b72_dekunuts_t6_a2_d_st:
+    jr    ra
+    sh    t6, 0x186(a2)
+
+b72_dekunuts_t0_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_dekunuts_t0_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_dekunuts_t0_s0_d_st
+    nop
+    addiu t0, t0, 1
+b72_dekunuts_t0_s0_d_st:
+    jr    ra
+    sh    t0, 0x186(s0)
+
+b72_dy_extra_t6_a0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_dy_extra_t6_a0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_dy_extra_t6_a0_d_st
+    nop
+    addiu t6, t6, 1
+b72_dy_extra_t6_a0_d_st:
+    jr    ra
+    sh    t6, 0x144(a0)
+
+b72_cs_cs_t2_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_cs_cs_t2_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_cs_cs_t2_s0_d_st
+    nop
+    addiu t2, t2, 1
+b72_cs_cs_t2_s0_d_st:
+    jr    ra
+    sw    t2, 0x1D8(s0)
+
+b72_ani_t0_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b72_ani_t0_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b72_ani_t0_s0_d_st
+    nop
+    addiu t0, t0, 1
+b72_ani_t0_s0_d_st:
+    jr    ra
+    sh    t0, 0x29E(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +640,97 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 72 injections ----
+.headersize 0x8090FB40 - 0x00CAD2C0            ; ovl_Arms_Hook
+.org 0x8090FF0C
+    jal   b72_arms_hook_t9_s0_d
+.headersize 0x80876080 - 0x00C13950            ; ovl_En_Firefly
+.org 0x80876A6C
+    jal   b72_firefly_t6_s0_d
+.org 0x80876D60
+    jal   b72_firefly_t2_s0_d
+.org 0x80876DC8
+    jal   b72_firefly_t6_s0_d
+.org 0x80876E58
+    jal   b72_firefly_t8_s0_d
+.org 0x80877094
+    jal   b72_firefly_t6_s0_d
+.org 0x808770EC
+    jal   b72_firefly_t6_s0_d
+.org 0x80877270
+    jal   b72_firefly_t6_s0_d
+.org 0x80877388
+    jal   b72_firefly_t8_s0_d
+.org 0x80877420
+    jal   b72_firefly_t6_s0_d
+.headersize 0x808CA170 - 0x00C679D0            ; ovl_En_Eiyer
+.org 0x808CAE8C
+    jal   b72_eiyer_t6_s0_d
+.org 0x808CB2CC
+    jal   b72_eiyer_t3_s0_d
+.org 0x808CB32C
+    jal   b72_eiyer_t6_s0_d
+.org 0x808CB4A4
+    jal   b72_eiyer_t8_s0_d
+.org 0x808CB590
+    jal   b72_eiyer_t6_s0_d
+.headersize 0x80884410 - 0x00C21CE0            ; ovl_En_Arrow
+.org 0x80884AE0
+    jal   b72_arrow_t6_s0_d
+.org 0x808850F0
+    jal   b72_arrow_t6_a1_d
+.org 0x80885158
+    jal   b72_arrow_t6_a1_d
+.headersize 0x80A8C8C0 - 0x00E0F200            ; ovl_En_Daiku
+.org 0x80A8DA18
+    jal   b72_daiku_t1_s0_d
+.headersize 0x80B6FBE0 - 0x00EEB300            ; ovl_En_Daiku_Kakariko
+.org 0x80B70420
+    jal   b72_daiku_k_t7_s0_d
+.headersize 0x809534B0 - 0x00CF0B40            ; ovl_En_Du
+.org 0x80953744
+    jal   b72_du_t6_a2_d
+.headersize 0x80AAB9C0 - 0x00E2B810            ; ovl_En_Ds
+.org 0x80AABD34
+    jal   b72_ds_t6_s0_d
+.org 0x80AABDD4
+    jal   b72_ds_t6_a2_d
+.org 0x80AABE2C
+    jal   b72_ds_t6_s0_d
+.headersize 0x80A74C60 - 0x00DF75A0            ; ovl_En_Dns
+.org 0x80A75BC8
+    jal   b72_dns_t7_s0_i
+.headersize 0x80B7ED10 - 0x00EFA430            ; ovl_En_Ge3
+.org 0x80B7F430
+    jal   b72_ge3_t6_a2_d
+.headersize 0x80AA4CF0 - 0x00E24B40            ; ovl_En_Heishi3
+.org 0x80AA5480
+    jal   b72_heishi3_t8_s0_d
+.headersize 0x80909800 - 0x00CA6FA0            ; ovl_En_Dekunuts
+.org 0x80909E90
+    jal   b72_dekunuts_t6_s0_d
+.org 0x8090A0E4
+    jal   b72_dekunuts_t6_a2_d
+.org 0x8090A168
+    jal   b72_dekunuts_t6_s0_d
+.org 0x8090A354
+    jal   b72_dekunuts_t0_s0_d
+.org 0x8090A528
+    jal   b72_dekunuts_t6_s0_d
+.org 0x8090A768
+    jal   b72_dekunuts_t6_a2_d
+.org 0x8090A824
+    jal   b72_dekunuts_t6_a2_d
+.headersize 0x80B22D80 - 0x00E9E4B0            ; ovl_En_Dy_Extra
+.org 0x80B22F6C
+    jal   b72_dy_extra_t6_a0_d
+.headersize 0x80AE1640 - 0x00E60920            ; ovl_En_Cs
+.org 0x80AE2304
+    jal   b72_cs_cs_t2_s0_d
+.headersize 0x80AD86C0 - 0x00E58500            ; ovl_En_Ani
+.org 0x80AD90B8
+    jal   b72_ani_t0_s0_d
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
