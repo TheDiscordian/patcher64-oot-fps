@@ -276,6 +276,69 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 26: Electric Bubble (En_Bili) timer tick-mod ----
+; Jabu / Forest electric bubble. Source uses == 0 checks AND has a
+; downstream `Animation_OnFrame` call (line 401) that the timer interlocks
+; with — preserving the value range avoids surprising that. Pattern E
+; tick-mod across all decrement sites.
+; struct.timer at offset 0x186 (header /* 0x196 */), s16.
+
+bili_s0_t6:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, blis0t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, blis0t6_store
+    nop
+    addiu t6, t6, 1
+blis0t6_store:
+    sh    t6, 0x186(s0)
+    jr    ra
+    lh    v0, 0x186(s0)
+
+bili_a1_t6:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, blia1t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, blia1t6_store
+    nop
+    addiu t6, t6, 1
+blia1t6_store:
+    sh    t6, 0x186(a1)
+    jr    ra
+    lh    v0, 0x186(a1)
+
+bili_a1_t9:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, blia1t9_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, blia1t9_store
+    nop
+    addiu t9, t9, 1
+blia1t9_store:
+    sh    t9, 0x186(a1)
+    jr    ra
+    lh    v0, 0x186(a1)
+
+bili_a0_t6:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, blia0t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, blia0t6_store
+    nop
+    addiu t6, t6, 1
+blia0t6_store:
+    sh    t6, 0x186(a0)
+    jr    ra
+    lh    v0, 0x186(a0)
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +401,23 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 26 — ovl_En_Bili (Electric Bubble) timer tick-mod (7 sites)
+.headersize 0x808C0080 - 0x00C5D8E0
+.org 0x808C0994                                ; sh t6,390(s0)
+    jal   bili_s0_t6
+.org 0x808C0A84                                ; sh t6,390(a1)
+    jal   bili_a1_t6
+.org 0x808C0DA0                                ; sh t6,390(s0)
+    jal   bili_s0_t6
+.org 0x808C0E20                                ; sh t6,390(s0)
+    jal   bili_s0_t6
+.org 0x808C0F20                                ; sh t9,390(a1)
+    jal   bili_a1_t9
+.org 0x808C118C                                ; sh t6,390(a0)
+    jal   bili_a0_t6
+.org 0x808C11EC                                ; sh t6,390(a0)
+    jal   bili_a0_t6
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
