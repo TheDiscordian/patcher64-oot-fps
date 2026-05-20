@@ -276,6 +276,118 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 58: En_Syateki_Niw (Shooting Gallery Cucco) — tick-mod ----
+; Castle-town shooting-gallery target cuccos. 9 timer fields control
+;   pecking, flapping, archery target hop, soot effect, cluck SFX,
+;   movement, and target-position tracking. All decrements except
+;   targetPosTimer (++).
+; All ==0/!=0 gates. Tick-mod via Pattern E.
+
+sy_targ:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, sy_targ_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, sy_targ_st
+    nop
+    addiu t4, t4, -1
+sy_targ_st:
+    jr    ra
+    sh    t4, 0x284(s0)
+
+sy_peck:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, sy_peck_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, sy_peck_st
+    nop
+    addiu t6, t6, 1
+sy_peck_st:
+    jr    ra
+    sh    t6, 0x244(s1)
+
+sy_flap:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, sy_flap_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, sy_flap_st
+    nop
+    addiu t7, t7, 1
+sy_flap_st:
+    jr    ra
+    sh    t7, 0x248(s1)
+
+sy_arch:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, sy_arch_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, sy_arch_st
+    nop
+    addiu t8, t8, 1
+sy_arch_st:
+    jr    ra
+    sh    t8, 0x24A(s1)
+
+sy_hop:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, sy_hop_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, sy_hop_st
+    nop
+    addiu t9, t9, 1
+sy_hop_st:
+    jr    ra
+    sh    t9, 0x24C(s1)
+
+sy_mov:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, sy_mov_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, sy_mov_st
+    nop
+    addiu t0, t0, 1
+sy_mov_st:
+    jr    ra
+    sh    t0, 0x24E(s1)
+
+sy_cluck:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, sy_cluck_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, sy_cluck_st
+    nop
+    addiu t1, t1, 1
+sy_cluck_st:
+    jr    ra
+    sh    t1, 0x252(s1)
+
+sy_soot:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, sy_soot_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, sy_soot_st
+    nop
+    addiu t2, t2, 1
+sy_soot_st:
+    jr    ra
+    sh    t2, 0x250(s1)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +450,25 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 58 injections ----
+.headersize 0x80AA56C0 - 0x00E25510            ; ovl_En_Syateki_Niw
+.org 0x80AA5CF0
+    jal   sy_targ
+.org 0x80AA6AC0
+    jal   sy_peck
+.org 0x80AA6AD0
+    jal   sy_flap
+.org 0x80AA6AE0
+    jal   sy_arch
+.org 0x80AA6AF0
+    jal   sy_hop
+.org 0x80AA6B00
+    jal   sy_mov
+.org 0x80AA6B10
+    jal   sy_cluck
+.org 0x80AA6B20
+    jal   sy_soot
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
