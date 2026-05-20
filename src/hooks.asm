@@ -276,6 +276,80 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 21: Shadow Temple traps (Bg_Haka_Trap) tick-mod ----
+; One overlay, 5 trap variants (guillotine, spiked crusher, spiked walls, fan
+; blade, fast guillotine). All share a single `timer` field (u8 @ 0x158;
+; header /* 0x168 */). Source has `if (timer == 20)` at z_bg_haka_trap.c:387
+; gating the guillotine's bottom-of-fall behaviour — value-keyed, so we use
+; tick-mod (skip 1/3 of decrements at 30 fps via frame_phase) to preserve the
+; value distribution.
+;
+; 5 decrement sites identified by automated `lbu v1; addiu reg,v1,-1; sb reg,
+; 344(base)` pattern scan. Each site fits one of 4 (base, register) variants:
+;   (s0, t7): 0x8099D130
+;   (s0, t6): 0x8099D238
+;   (a3, t6): 0x8099D56C
+;   (a0, t6): 0x8099D61C, 0x8099D884
+; Hooks store the authoritative value AND reload v0 in jr ra's delay slot —
+; downstream code at all five sites reads the field again shortly after for
+; value-keyed branches.
+
+haka_trap_tick_s0_t7:                          ; (s0, t7)
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)
+    beqz  t2, htts0t7_store
+    lui   t2, 0x801C
+    lbu   t2, 0x6FB4(t2)
+    bnez  t2, htts0t7_store
+    nop
+    addiu t7, t7, 1
+htts0t7_store:
+    sb    t7, 0x158(s0)
+    jr    ra
+    lbu   v0, 0x158(s0)
+
+haka_trap_tick_s0_t6:                          ; (s0, t6)
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)
+    beqz  t2, htts0t6_store
+    lui   t2, 0x801C
+    lbu   t2, 0x6FB4(t2)
+    bnez  t2, htts0t6_store
+    nop
+    addiu t6, t6, 1
+htts0t6_store:
+    sb    t6, 0x158(s0)
+    jr    ra
+    lbu   v0, 0x158(s0)
+
+haka_trap_tick_a3_t6:                          ; (a3, t6)
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)
+    beqz  t2, htta3t6_store
+    lui   t2, 0x801C
+    lbu   t2, 0x6FB4(t2)
+    bnez  t2, htta3t6_store
+    nop
+    addiu t6, t6, 1
+htta3t6_store:
+    sb    t6, 0x158(a3)
+    jr    ra
+    lbu   v0, 0x158(a3)
+
+haka_trap_tick_a0_t6:                          ; (a0, t6)
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)
+    beqz  t2, htta0t6_store
+    lui   t2, 0x801C
+    lbu   t2, 0x6FB4(t2)
+    bnez  t2, htta0t6_store
+    nop
+    addiu t6, t6, 1
+htta0t6_store:
+    sb    t6, 0x158(a0)
+    jr    ra
+    lbu   v0, 0x158(a0)
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +412,19 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 21 — ovl_Bg_Haka_Trap (Shadow Temple 5-trap variants)
+.headersize 0x8099C8E0 - 0x00D31570
+.org 0x8099D130                                ; sb t7,344(s0)
+    jal   haka_trap_tick_s0_t7
+.org 0x8099D238                                ; sb t6,344(s0)
+    jal   haka_trap_tick_s0_t6
+.org 0x8099D56C                                ; sb t6,344(a3)
+    jal   haka_trap_tick_a3_t6
+.org 0x8099D61C                                ; sb t6,344(a0)
+    jal   haka_trap_tick_a0_t6
+.org 0x8099D884                                ; sb t6,344(a0)
+    jal   haka_trap_tick_a0_t6
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
