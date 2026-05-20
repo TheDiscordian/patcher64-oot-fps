@@ -276,78 +276,320 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
-; ---- Bucket 45: En_Fw (Flare Dancer) AI timers — tick-mod ----
-; Flare Dancer (Fire Temple miniboss). 5 timer fields control
-; damage-flash, explosion fx, slide-attack movement + SFX, and the
-; "return to body" timeout for when the head ragdolls.
-; Source uses ==0 / !=0 gates throughout. Tick-mod via Pattern E
-; for uniformity so attack/slide/explosion cadence matches 20 fps.
+; ---- Bucket 12: scale Boss_Goma (Gohma) patienceTimer seed by 1.5 in 30 fps ----
+; this->patienceTimer = 200 at z_boss_goma.c lines 997 + 1424; decrement at
+; line 1642 (raw `timer--`). When patienceTimer reaches 0 AND player is
+; close (z_boss_goma.c:1445), Gohma lunges. 200 frames @ 20 fps = 10 s wait;
+; @ 30 fps raw = 6.67 s — Gohma's pre-lunge patience runs 1.5× too short.
+; struct offset 0x186 in this build.
 
-fw_explo:
-    lui   v0, 0x8042
-    lbu   v0, -0x67CE(v0)
-    beqz  v0, fw_explo_st
-    lui   v0, 0x801C
-    lbu   v0, 0x6FB4(v0)
-    bnez  v0, fw_explo_st
-    nop
-    addiu t9, t9, 1
-fw_explo_st:
+goma_patience_1_seed:                          ; replaces li t6,200 at 0x808A96A0
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, gp1_done                         ; 20 fps -> keep t6 = 200
+    li    t6, 200                              ; (delay slot) original value
+    li    t6, 300                              ; 30 fps -> 200 * 1.5
+gp1_done:
     jr    ra
-    sh    t9, 0x1FA(s0)
-
-fw_damage:
-    lui   v0, 0x8042
-    lbu   v0, -0x67CE(v0)
-    beqz  v0, fw_damage_st
-    lui   v0, 0x801C
-    lbu   v0, 0x6FB4(v0)
-    bnez  v0, fw_damage_st
     nop
-    addiu t6, t6, 1
-fw_damage_st:
-    jr    ra
-    sh    t6, 0x1F8(s0)
 
-fw_rtp:
-    lui   v0, 0x8042
-    lbu   v0, -0x67CE(v0)
-    beqz  v0, fw_rtp_st
-    lui   v0, 0x801C
-    lbu   v0, 0x6FB4(v0)
-    bnez  v0, fw_rtp_st
+; Site 2 sits inside the function epilogue:
+;   0x808AAA98: li   t7, 200       <-- replace with jal goma_patience_2_seed
+;   0x808AAA9C: sh   t7, 390(t8)   <-- delay slot of jal: stores STALE t7
+;   0x808AAAA0: lw   ra, 20(sp)    <-- caller's ra restored here
+; The delay-slot sh fires with whatever t7 held before (garbage), so the hook
+; unconditionally overwrites the field with the correct value. t8 already
+; holds the struct ptr from `lw t8,32(sp)` at 0x808AAA94 (pre-jal).
+goma_patience_2_seed:                          ; replaces li t7,200 at 0x808AAA98
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, gp2_store                        ; 20 fps -> rewrite with 200
+    li    t7, 200                              ; (delay slot) value for 20 fps
+    li    t7, 300                              ; 30 fps -> 200 * 1.5
+gp2_store:
+    jr    ra
+    sh    t7, 0x186(t8)                        ; (delay slot) authoritative store
+; ---- Bucket 11: Armos (En_Am) AI timers — mixed seed-mod + tick-mod ----
+; Same family — raw `timer--` on s16 fields. Struct shifted -0x10 vs header:
+;   header 0x25A cooldownTimer -> 0x24A   (seed-mod)
+;   header 0x25C attackTimer   -> 0x24C   (seed-mod)
+;   header 0x25E iceTimer      -> 0x24E   (TICK-MOD — has `% 4` and `>> 2` uses)
+;   header 0x260 deathTimer    -> 0x250   (TICK-MOD — has `< 52` and `% 4` uses)
+;
+; seed-mod ok when the source only checks `== 0` / `!= 0`. Use tick-mod when
+; the source has intermediate threshold or modular comparisons on the field —
+; scaling the seed shifts the value-distribution and breaks those checks. The
+; first attempt seed-modded deathTimer 64->96 and iceTimer 48->72, which user
+; play-test caught: Armos spun then hopped once before exploding (the death
+; sequence has `if (deathTimer < 52)` at z_en_am.c:619 gating the multi-hop
+; lunge body, plus `(deathTimer % 4)==0` at line 899 — both compare against
+; the value, so the value has to stay in its original range).
+;
+; cooldownTimer seeds (40 + 5) and attackTimer seed (200) are all gated on
+; `== 0` only, so seed-mod is fine for those. cooldownTimer=5 (SetupRicochet)
+; and attackTimer=200 (Sleep) both have their `li` in a branch delay slot, so
+; we patch the corresponding `sh` store instead.
+
+armos_cooldown_seed:                           ; replaces li t7,40 at 0x808F973C
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, acs_done                         ; 20 fps -> keep t7 = 40
+    li    t7, 40                               ; (delay slot) original value
+    li    t7, 60                               ; 30 fps -> 40 * 1.5
+acs_done:
+    jr    ra
     nop
-    addiu t7, t7, 1
-fw_rtp_st:
-    jr    ra
-    sh    t7, 0x202(s0)
 
-fw_slideSfx:
-    lui   v0, 0x8042
-    lbu   v0, -0x67CE(v0)
-    beqz  v0, fw_slideSfx_st
-    lui   v0, 0x801C
-    lbu   v0, 0x6FB4(v0)
-    bnez  v0, fw_slideSfx_st
+armos_attack_seed:                             ; replaces sh t5,588(a0/s0) at 0x808F9AC8
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, aas_store                        ; 20 fps -> keep t5 = 200
     nop
-    addiu t4, t4, 1
-fw_slideSfx_st:
+    li    t5, 300                              ; 30 fps -> 200 * 1.5
+aas_store:
     jr    ra
-    sh    t4, 0x200(s0)
+    sh    t5, 0x24C(s0)                        ; (delay slot) original store
 
-fw_slide:
-    lui   v0, 0x8042
-    lbu   v0, -0x67CE(v0)
-    beqz  v0, fw_slide_st
-    lui   v0, 0x801C
-    lbu   v0, 0x6FB4(v0)
-    bnez  v0, fw_slide_st
+; deathTimer tick-mod: replaces `sh t0,592(s2)` at 0x808FABE4 in EnAm_Update.
+; Original sequence:
+;   lh   v0, 592(s2)   ; load
+;   beqz v0, +N        ; if zero, skip
+;   addiu t0, v0, -1   ; (delay slot) decrement
+;   sh   t0, 592(s2)   ; <-- patched: jal armos_death_tick
+;   lh   v0, 592(s2)   ; (delay slot of our jal) reloads OLD memory value
+;   ...uses v0 in `bnez v0, ...` further down
+; Hook stores authoritative value AND reloads v0 in jr ra's delay slot, so
+; v0 sees the post-store value (matches original semantics).
+armos_death_tick:                              ; replaces sh t0,592(s2) at 0x808FABE4
+    lui   t2, 0x8042                           ; t2 scratch (t0 is the value)
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, adt_store                        ; 20 fps -> always decrement
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; global frame phase
+    bnez  t2, adt_store                        ; phase 1/2 -> decrement
     nop
-    addiu t8, t8, 1
-fw_slide_st:
+    addiu t0, t0, 1                            ; phase 0 -> undo decrement
+adt_store:
+    sh    t0, 0x250(s2)                        ; authoritative store
     jr    ra
-    sh    t8, 0x1FE(s0)
+    lh    v0, 0x250(s2)                        ; (delay slot) reload v0 (downstream `bnez v0` needs it)
 
+; iceTimer tick-mod: replaces `sh t7,590(s0)` at 0x808FAFD4 in EnAm_Draw.
+; Similar structure — iceTimer is decremented in Draw, then `iceTimer % 4`
+; and `iceTimer >> 2` drive an ice-particle spawn pattern (cosmetic).
+armos_ice_tick:                                ; replaces sh t7,590(s0) at 0x808FAFD4
+    lui   t2, 0x8042                           ; t2 scratch (t7 is the value)
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, ait_store                        ; 20 fps -> always decrement
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; global frame phase
+    bnez  t2, ait_store                        ; phase 1/2 -> decrement
+    nop
+    addiu t7, t7, 1                            ; phase 0 -> undo decrement
+ait_store:
+    jr    ra
+    sh    t7, 0x24E(s0)                        ; (delay slot) authoritative store
+                                                ; (no v0 reload needed — the
+                                                ; original delay-slot `lh t0`
+                                                ; further down reads memory
+                                                ; AFTER our store, so it picks
+                                                ; up the correct value)
+
+armos_ricochet_seed:                           ; replaces sh t8,586(a0) at 0x808F99EC
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, ars_store                        ; 20 fps -> keep t8 = 5
+    nop
+    li    t8, 8                                ; 30 fps -> 5*1.5 = 7.5 -> 8 (round up)
+ars_store:
+    jr    ra
+    sh    t8, 0x24A(a0)                        ; (delay slot) original store (a0, not s0)
+
+
+; ---- B11 Armos lunge/death animation fix (stock 30 fps bug) ----
+; User-confirmed: on stock Patcher64+ Redux 30 fps, Armos "humps the ground"
+; on attack lunge and "hops once then spins in place" during death sequence.
+;
+; Root cause: in EnAm_Lunge, when curFrame > 11 mid-air, the code clamps
+; curFrame to 11 to hold the animation. At 30 fps, B2 gravity (2/3 scale) is
+; correct in wall-clock terms, but the actor stays airborne for MORE Update
+; ticks - each of which clamps curFrame to 11. When Armos lands, SkelAnime
+; immediately advances curFrame from 11 by +4 = 15, which wraps (animLength
+; 12) to 3. The subsequent cycle is 3 -> 7 -> 11 -> 15->3 - NEVER 8, so the
+; curFrame==8.0f trigger that fires velocity.y=12 + speed=6 never fires
+; again. Armos visibly "humps" (in-place hop) then spins.
+;
+; At 20 fps with full gravity, Armos lands fast enough that the clamp-to-11
+; doesn't take effect mid-cycle: curFrame overshoots to 12 cleanly, wraps to
+; 0, then 4, 8 - hops again. Cadence works.
+;
+; Fix: at the moment of landing (the else-branch of the curFrame > 11 arm),
+; force curFrame=0.0f at 30 fps so the next cycle starts clean. Hook the
+; existing sh-zero-0x254(s0) (unk_264=0) store in the landing block - runs
+; once per landing, perfect.
+
+en_am_land_fix:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, am_done                          ; 20 fps -> original behaviour
+    nop
+    sw    zero, 0x16C(s0)                      ; 30 fps -> curFrame = 0.0f
+am_done:
+    jr    ra
+    sh    zero, 0x254(s0)                      ; (delay slot) original unk_264=0
+
+; ---- B11 follow-up: same curFrame trajectory bug in 4 OTHER state functions ----
+; User report: lunge animation still humps the ground when Armos moves out of
+; range mid-attack. Trace: out-of-range lunge triggers EnAm_SetupRotateToHome
+; -> EnAm_RotateToHome -> EnAm_MoveToHome -> EnAm_RotateToInit -> EnAm_Sleep
+; (or Lunge -> Cooldown -> Lunge again). Every one of those state functions
+; uses the same `curFrame == 8.0f` strict-equality hop trigger, and the same
+; clamp-to-11 in-air branch. So the curFrame wrap that skips 8.0f on 30 fps
+; breaks ALL of them, not just EnAm_Lunge.
+;
+; Three of the four functions are safe to hook at their `velocity.y = 0.0f`
+; store in the landing-success branch (delay slot is an independent store).
+; EnAm_Cooldown is the exception: its delay slot is `jal SpawnEffects`,
+; and JAL-in-delay-slot is undefined on R4300. For Cooldown we hook the
+; `move $a0, $s0` two instructions earlier (preparing SpawnEffects's arg)
+; and restore that move in jr's delay slot.
+
+; Generic hook: curFrame=0 reset + restore `swc1 $fN, 0x60(s0)` (velocity.y = 0.0f).
+; The original instruction stores a float 0.0 from $fN; `sw zero, 0x60(s0)`
+; writes the same 32-bit pattern (IEEE 754 0.0 == integer 0), so it's safe
+; regardless of which $fN the compiler chose at each site.
+en_am_velY_reset:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, am_vy_done                       ; 20 fps -> just zero velocity.y
+    nop
+    sw    zero, 0x16C(s0)                      ; 30 fps -> curFrame = 0.0f too
+am_vy_done:
+    jr    ra
+    sw    zero, 0x60(s0)                       ; (delay slot) velocity.y = 0.0 (bit-equiv to original swc1)
+
+; Cooldown-specific hook: curFrame=0 reset + restore `or $a0, $s0, $zero`
+; (move $a0, $s0). Injection point sits 2 slots before the velocity.y store;
+; the JAL's delay slot becomes that original `swc1` so velocity.y=0 still
+; happens. SpawnEffects's $a0 = this is set in jr's delay slot.
+en_am_curframe_reset_cd:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, am_cd_done                       ; 20 fps -> just restore the move
+    nop
+    sw    zero, 0x16C(s0)                      ; 30 fps -> curFrame = 0.0f
+am_cd_done:
+    jr    ra
+    or    $a0, $s0, $zero                      ; (delay slot) original move $a0, $s0
+
+; ---- Boss_Goma intro pacing fix (frameCount tick-mod) ----
+; User-reported: Gohma's boss-intro cutscene plays "almost twice as fast" at
+; 30 fps stock. Trace: BossGoma_Update (z_boss_goma.c:1930, RAM 0x808ABCF8)
+; increments this->frameCount (s16 @ struct 0x184, header 0x194 - shift -0x10)
+; once per Update. The intro state machine (action state 2) keys cadence off
+; `frameCount == 176` (Door_Shutter spawn + lighting change), `== 190` (player
+; cs-action), `>= 228` (camera return + Cutscene_StopManual). At 30 fps stock
+; those fire 1.5x sooner. (Gohma uses Cutscene_StartManual + actor-local
+; frameCount, not the scripted-cutscene path covered by PR #77.)
+;
+; Fix: tick-mod the frameCount++ via frame_phase. Same family as Bucket 7 /
+; PR #77 cutscene curFrame.
+;
+; Injection point: the C `this->frameCount++;` compiles to
+;   0x808ABD0C: lh    r15, 0x184(s0)        ; r15 = frameCount
+;   0x808ABD18: addiu r24, r15, 1           ; r24 = r15 + 1
+;   ...
+;   0x808ABD24: sh    r24, 0x184(s0)        ; (delay slot of beq above) frameCount = r24
+; We hook the addiu at 0x808ABD18 (jal -> hook). Delay slot 0x808ABD1C is
+; `sh r14, 0x1A8(s0)` - safe, independent store. Hook conditionally computes
+; r24 = r15+1 (normal/20fps/phase!=0) or r24 = r15 (30fps phase 0, tick skip).
+; The downstream `sh r24, 0x184(s0)` at 0x808ABD24 (delay slot of the beq at
+; 0x808ABD20) then writes the right value to frameCount.
+en_goma_framecount_tick:
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, gft_inc                          ; 20 fps -> always increment
+    nop
+    lui   t0, 0x801C
+    lbu   t0, 0x6FB4(t0)                       ; frame_phase
+    beqz  t0, gft_skip                         ; phase 0 -> skip increment
+    nop
+gft_inc:
+    jr    ra
+    addiu t8, t7, 1                            ; (delay slot) r24 = r15 + 1  (t7=r15, t8=r24)
+gft_skip:
+    jr    ra
+    or    t8, t7, zero                         ; (delay slot) r24 = r15 (no inc)
+
+; ---- Boss_Goma intro camera-lerp scaler wrapper ----
+; Math_ApproachF(f32* p, f32 target, f32 fraction, f32 step) has no
+; R_UPDATE_RATE scaling, so at 30 fps the camera lerps in case 2 of
+; BossGoma_Encounter (z_boss_goma.c:754-806) get called 1.5x more often per
+; second and the sub-camera pan moves visibly faster.
+;
+; v1 of this fix skipped the call 1 in 3 frames - caused visible stutter
+; ("20 fps feel") because the screen still renders at 30 fps and the camera
+; held still 1 in 3 frames. Wrong approach.
+;
+; This version scales `fraction` (a2/$r6) and `step` (a3/$r7) by 2/3 at 30 fps
+; - the camera still moves every frame (no stutter), just advances 2/3 as far
+; per call. Net wall-clock motion matches 20 fps: 30 calls/sec * 2/3 advance =
+; 20-fps-equivalent per-second motion.
+;
+; O32 ABI passes Math_ApproachF's float args (target/fraction/step) as int
+; bits in r5/r6/r7 - the callee mtc1's them inside. So we can mtc1 a2 and a3
+; to FP regs, multiply by 0.6666667f, and mfc1 back to int regs before
+; tail-jumping to Math_ApproachF. 20 fps path: bypass the scaling.
+goma_intro_lerp_scale:
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, gils_call                        ; 20 fps -> direct call
+    nop
+    lui   t0, 0x3F2A
+    ori   t0, t0, 0xAAAB                       ; t0 = bits of 0.6666667f
+    mtc1  t0, f4                               ; f4 = 0.6666667f
+    mtc1  a2, f0                               ; f0 = fraction (int bits -> float)
+    mtc1  a3, f2                               ; f2 = step
+    nop
+    mul.s f0, f0, f4                           ; fraction *= 2/3
+    mul.s f2, f2, f4                           ; step *= 2/3
+    mfc1  a2, f0                               ; a2 = scaled fraction
+    mfc1  a3, f2                               ; a3 = scaled step
+gils_call:
+    j     0x80064280                           ; tail-call Math_ApproachF (preserves ra)
+    nop
+
+
+; ---- Debug-save playerName init wrapper ----
+; Retail NTSC 1.0's Sram_InitDebugSave assigns the Japanese-encoded name
+;   { 0x81, 0x87, 0x61, 0xDF, 0xDF, 0xDF, 0xDF, 0xDF }   (=リンク     )
+; into gSaveContext.save.info.playerData.playerName. The NTSC English message
+; engine substitutes that 8-byte buffer wherever an NPC's dialogue uses the
+; name token (\xB2) — e.g. Darunia, the imprisoned Gorons in Fire Temple,
+; Saria, etc. The bytes 0x81/0x87/0x61 are valid indices into the JP font
+; but undefined in the English Font_LoadOrderedFont set, producing garbage
+; glyphs or a crash depending on font alignment.
+;
+; Wrap every callsite of Sram_InitDebugSave with this stub: call the
+; original, then overwrite playerName with NTSC English "LINK    " before
+; any message renders. Two callsites are redirected below.
+sram_init_w_name:
+    addiu sp, sp, -0x10
+    sw    ra, 0x0C(sp)
+    jal   0x800900EC                           ; original Sram_InitDebugSave
+    nop
+    lui   t0, 0x8011
+    ori   t0, t0, 0xA5F4                       ; &gSaveContext.save.info.playerData.playerName
+    lui   t1, 0xB6B3                           ; "LI" (FILENAME_UPPERCASE: 0xB6, 0xB3)
+    ori   t1, t1, 0xB8B5                       ; "NK" (FILENAME_UPPERCASE: 0xB8, 0xB5)
+    sw    t1, 0(t0)
+    lui   t1, 0xDFDF                           ; "  " (FILENAME_SPACE)
+    ori   t1, t1, 0xDFDF                       ; "  "
+    sw    t1, 4(t0)
+    lw    ra, 0x0C(sp)
+    addiu sp, sp, 0x10
+    jr    ra
+    nop
 
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
@@ -412,25 +654,68 @@ fw_slide_st:
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
 
-; ---- Bucket 45 injections ----
-.headersize 0x80977E80 - 0x00D15510            ; ovl_En_Fw
-.org 0x80978750
-    jal   fw_explo
-.org 0x80978820
-    jal   fw_damage
-.org 0x80978870
-    jal   fw_rtp
-.org 0x80978A18
-    jal   fw_slideSfx
-.org 0x80978ACC
-    jal   fw_slide
+; Bucket 11 — ovl_En_Am (Armos AI seeds)
+.headersize 0x808F9080 - 0x00C96840
+.org 0x808F973C                                ; was `li t7,40` in EnAm_SetupCooldown
+    jal   armos_cooldown_seed
+.org 0x808F9AC8                                ; was `sh t5,588(s0)` in EnAm_Sleep (attackTimer=200)
+    jal   armos_attack_seed
+.org 0x808F99EC                                ; was `sh t8,586(a0)` (cooldownTimer=5 in SetupRicochet)
+    jal   armos_ricochet_seed
+.org 0x808FABE4                                ; was `sh t0,592(s2)` (deathTimer-- in EnAm_Update)
+    jal   armos_death_tick
+.org 0x808FAFD4                                ; was `sh t7,590(s0)` (iceTimer-- in EnAm_Draw)
+    jal   armos_ice_tick
+
+
+; ---- B11 Armos landing-curFrame-reset injections ----
+.headersize 0x808F9080 - 0x00C96840            ; ovl_En_Am
+.org 0x808FA350                                ; was sh zero,0x254(s0) in EnAm_Lunge landing branch
+    jal   en_am_land_fix
+.org 0x808F9D48                                ; was swc1 $f16,0x60(s0) in EnAm_RotateToHome landing branch
+    jal   en_am_velY_reset
+.org 0x808F9E70                                ; was swc1 $f8,0x60(s0) in EnAm_RotateToInit landing branch
+    jal   en_am_velY_reset
+.org 0x808F9FC4                                ; was swc1 $f0,0x60(s0) in EnAm_MoveToHome landing branch
+    jal   en_am_velY_reset
+.org 0x808FA1E8                                ; was or $a0,$s0,$zero (move a0,s0) in EnAm_Cooldown landing branch
+    jal   en_am_curframe_reset_cd              ; (next slot, the swc1 fN,0x60(s0), runs as JAL delay -> velocity.y=0 still happens)
+
+; Bucket 12 — ovl_Boss_Goma (Gohma patienceTimer)
+.headersize 0x808A7370 - 0x00C44C30
+.org 0x808A96A0                                ; was `li t6,200` (patienceTimer=200 site 1)
+    jal   goma_patience_1_seed
+.org 0x808AAA98                                ; was `li t7,200` (patienceTimer=200 site 2)
+    jal   goma_patience_2_seed
+
+; Boss_Goma intro pacing — BossGoma_Update frameCount++ tick-mod
+.org 0x808ABD18                                ; was `addiu r24, r15, 1` (frameCount + 1)
+    jal   en_goma_framecount_tick
+
+; Boss_Goma intro pacing — case-2 camera-lerp scaler (5 sites in BossGoma_Encounter)
+; Each redirect routes through goma_intro_lerp_scale which multiplies fraction
+; and step by 2/3 at 30 fps then tail-jumps to Math_ApproachF. Smooth camera
+; motion at every frame (no stutter), 2/3 wall-clock advance rate matches 20 fps.
+.org 0x808A88D8                                ; subCamEye.x lerp
+    jal   goma_intro_lerp_scale
+.org 0x808A8918                                ; subCamEye.y lerp
+    jal   goma_intro_lerp_scale
+.org 0x808A8958                                ; subCamEye.z lerp
+    jal   goma_intro_lerp_scale
+.org 0x808A8974                                ; subCamFollowSpeed lerp
+    jal   goma_intro_lerp_scale
+.org 0x808A89C0                                ; subCamAt.y lerp (conditional)
+    jal   goma_intro_lerp_scale
+
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
 ; build the debug save -> File 1/2/3 are full-inventory saves.
+; Calls the playerName wrapper (above) instead of raw Sram_InitDebugSave so
+; the name buffer holds NTSC English "LINK    " before any NPC dialogue runs.
 .headersize 0x800110A0 - 0x00A87000
 .org 0x800908EC
-    jal   0x800900EC                           ; Sram_InitDebugSave
+    jal   sram_init_w_name                     ; was `jal 0x800900EC`
 
 ; ---- FAST-TEST: boot straight into Map Select (warp to any scene) ----
 ; Setup_InitImpl's SET_NEXT_GAMESTATE(ConsoleLogo_Init, ConsoleLogoState) is
@@ -445,8 +730,12 @@ fw_slide_st:
 
 ; MapSelect_LoadGame builds the debug save only if fileNum==0xFF; a cold boot
 ; zeroes fileNum, so force `lw t6,fileNum` to load 0xFF -> every warp gets it.
+; Also redirect the in-function `jal Sram_InitDebugSave` to the playerName
+; wrapper so every warp leaves playerName as NTSC English "LINK    ".
 .headersize 0x808009F8 - 0x00B9E438
 .org 0x808009F8                                ; was `lw t6,0x1354(v0)`
     addiu t6, zero, 0xFF
+.org 0x80800A08                                ; was `jal 0x800900EC` (Sram_InitDebugSave)
+    jal   sram_init_w_name
 
 .close
