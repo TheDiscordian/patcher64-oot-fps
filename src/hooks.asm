@@ -306,25 +306,34 @@ aas_store:
     jr    ra
     sh    t5, 0x24C(s0)                        ; (delay slot) original store
 
+; The death + ice sites both have the pattern  `li REG,N` / `sh REG,X(s0)` —
+; replacing the `li` with a jal puts the `sh` in the jal's delay slot, which
+; runs BEFORE the hook with STALE REG. That stored garbage to deathTimer /
+; iceTimer (user-observed: "lunge broken — shakes but doesn't move toward me"
+; from corrupt deathTimer making EnAm_Lunge go into panicSpin path, and
+; "explodes without spinning first" from the same field). Fix: hook does its
+; OWN authoritative store in jr ra's delay slot — that overwrites the stale
+; one the original delay slot inflicted.
+
 armos_death_seed:                              ; replaces li t6,64 at 0x808FA0E4
     lui   t0, 0x8042
     lbu   t0, -0x67CE(t0)                      ; fps_switch
-    beqz  t0, ads_done                         ; 20 fps -> keep t6 = 64
-    li    t6, 64                               ; (delay slot) original value
+    beqz  t0, ads_done                         ; 20 fps -> rewrite with 64
+    li    t6, 64                               ; (delay slot) 20 fps value
     li    t6, 96                               ; 30 fps -> 64 * 1.5
 ads_done:
     jr    ra
-    nop
+    sh    t6, 0x250(s0)                        ; (delay slot) authoritative store
 
 armos_ice_seed:                                ; replaces li t0,48 at 0x808FA774
-    lui   t2, 0x8042                           ; t2 scratch (t0 is the seed!)
+    lui   t2, 0x8042                           ; t2 scratch (t0 IS the seed)
     lbu   t2, -0x67CE(t2)                      ; fps_switch
-    beqz  t2, ais_done                         ; 20 fps -> keep t0 = 48
-    li    t0, 48                               ; (delay slot) original value
+    beqz  t2, ais_done                         ; 20 fps -> rewrite with 48
+    li    t0, 48                               ; (delay slot) 20 fps value
     li    t0, 72                               ; 30 fps -> 48 * 1.5
 ais_done:
     jr    ra
-    nop
+    sh    t0, 0x24E(s0)                        ; (delay slot) authoritative store
 
 armos_ricochet_seed:                           ; replaces sh t8,586(a0) at 0x808F99EC
     lui   t0, 0x8042
