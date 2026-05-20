@@ -276,6 +276,260 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 68: 11 dungeon Bg_ objects — tick-mod ----
+; Bg_Hidan_* (Fire Temple), Bg_Ice_Turara (Ice Cavern icicles),
+; Bg_Haka_Huta (Shadow coffin), Bg_Mori_* (Forest), Bg_Mizu_Bwall
+; (Water Temple wall), Bg_Heavy_Block (heavy stone puzzle).
+; All ==0/!=0 gates. Tick-mod via Pattern E.
+
+hc_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hc_t1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hc_t1_st
+    nop
+    addiu t6, t6, 1
+hc_t1_st:
+    jr    ra
+    sh    t6, 0x144(a0)
+
+hf_t:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hf_t_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hf_t_st
+    nop
+    addiu t6, t6, 1
+hf_t_st:
+    jr    ra
+    sh    t6, 0x158(a0)
+
+hr_t_s0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_t_s0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_t_s0_t6_st
+    nop
+    addiu t6, t6, 1
+hr_t_s0_t6_st:
+    jr    ra
+    sh    t6, 0x15A(s0)
+
+hr_t_a0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_t_a0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_t_a0_t6_st
+    nop
+    addiu t6, t6, 1
+hr_t_a0_t6_st:
+    jr    ra
+    sh    t6, 0x15A(a0)
+
+hr_t_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_t_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_t_s0_t7_st
+    nop
+    addiu t7, t7, 1
+hr_t_s0_t7_st:
+    jr    ra
+    sh    t7, 0x15A(s0)
+
+hr_t_s0_t8i:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_t_s0_t8i_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_t_s0_t8i_st
+    nop
+    addiu t8, t8, -1
+hr_t_s0_t8i_st:
+    jr    ra
+    sh    t8, 0x15A(s0)
+
+hs_t_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hs_t_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hs_t_s0_st
+    nop
+    addiu t6, t6, 1
+hs_t_s0_st:
+    jr    ra
+    sh    t6, 0x158(s0)
+
+hs_t_a3:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hs_t_a3_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hs_t_a3_st
+    nop
+    addiu t7, t7, 1
+hs_t_a3_st:
+    jr    ra
+    sh    t7, 0x158(a3)
+
+hs_t_a0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hs_t_a0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hs_t_a0_st
+    nop
+    addiu t6, t6, 1
+hs_t_a0_st:
+    jr    ra
+    sh    t6, 0x158(a0)
+
+hw_t:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hw_t_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hw_t_st
+    nop
+    addiu t6, t6, 1
+hw_t_st:
+    jr    ra
+    sh    t6, 0x142(a0)
+
+it_shiver:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, it_shiver_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, it_shiver_st
+    nop
+    addiu t6, t6, 1
+it_shiver_st:
+    jr    ra
+    sh    t6, 0x158(s0)
+
+hh_c_a3:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hh_c_a3_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hh_c_a3_st
+    nop
+    addiu t6, t6, 1
+hh_c_a3_st:
+    jr    ra
+    sh    t6, 0x158(a3)
+
+hh_c_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hh_c_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hh_c_s0_st
+    nop
+    addiu t6, t6, 1
+hh_c_s0_st:
+    jr    ra
+    sh    t6, 0x158(s0)
+
+hh_c_s0_t7i:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hh_c_s0_t7i_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hh_c_s0_t7i_st
+    nop
+    addiu t7, t7, -1
+hh_c_s0_t7i_st:
+    jr    ra
+    sh    t7, 0x158(s0)
+
+mi_drain:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mi_drain_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mi_drain_st
+    nop
+    addiu t2, t2, 1
+mi_drain_st:
+    jr    ra
+    sh    t2, 0x14A(s0)
+
+mb_wait:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mb_wait_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mb_wait_st
+    nop
+    addiu t6, t6, 1
+mb_wait_st:
+    jr    ra
+    sh    t6, 0x158(s0)
+
+mw_break:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, mw_break_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, mw_break_st
+    nop
+    addiu t6, t6, 1
+mw_break_st:
+    jr    ra
+    sw    t6, 0x2A0(a0)
+
+hb_t_dec:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hb_t_dec_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hb_t_dec_st
+    nop
+    addiu t2, t2, 1
+hb_t_dec_st:
+    jr    ra
+    sh    t2, 0x160(s0)
+
+hb_t_inc:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hb_t_inc_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hb_t_inc_st
+    nop
+    addiu t9, t9, -1
+hb_t_inc_st:
+    jr    ra
+    sh    t9, 0x160(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +592,67 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 68 injections ----
+.headersize 0x808E4190 - 0x00C81950            ; ovl_Bg_Hidan_Curtain
+.org 0x808E44A0
+    jal   hc_t1
+.org 0x808E46BC
+    jal   hc_t1
+.headersize 0x808F2ED0 - 0x00C90690            ; ovl_Bg_Hidan_Fslift
+.org 0x808F3080
+    jal   hf_t
+.headersize 0x808D9560 - 0x00C76D50            ; ovl_Bg_Hidan_Rock
+.org 0x808D993C
+    jal   hr_t_s0_t6
+.org 0x808D9AF8
+    jal   hr_t_a0_t6
+.org 0x808D9BAC
+    jal   hr_t_s0_t6
+.org 0x808D9CB8
+    jal   hr_t_s0_t7
+.org 0x808D9E58
+    jal   hr_t_a0_t6
+.org 0x808D9EB0
+    jal   hr_t_s0_t8i
+.headersize 0x808DC680 - 0x00C79E70            ; ovl_Bg_Hidan_Sima
+.org 0x808DC8B0
+    jal   hs_t_s0
+.org 0x808DC9C8
+    jal   hs_t_a3
+.org 0x808DCA3C
+    jal   hs_t_a0
+.org 0x808DCA90
+    jal   hs_t_s0
+.headersize 0x809344C0 - 0x00CD1BE0            ; ovl_Bg_Hidan_Fwbig
+.org 0x8093478C
+    jal   hw_t
+.org 0x80934910
+    jal   hw_t
+.headersize 0x80B789D0 - 0x00EF40F0            ; ovl_Bg_Ice_Turara
+.org 0x80B78D98
+    jal   it_shiver
+.headersize 0x8099DEB0 - 0x00D32B40            ; ovl_Bg_Haka_Huta
+.org 0x8099E4D4
+    jal   hh_c_a3
+.org 0x8099E58C
+    jal   hh_c_s0
+.org 0x8099E644
+    jal   hh_c_s0_t7i
+.headersize 0x809EEA00 - 0x00D7C0F0            ; ovl_Bg_Mori_Idomizu
+.org 0x809EECF8
+    jal   mi_drain
+.headersize 0x80927020 - 0x00CC4790            ; ovl_Bg_Mori_Bigst
+.org 0x80927710
+    jal   mb_wait
+.headersize 0x80B6DF10 - 0x00EE9630            ; ovl_Bg_Mizu_Bwall
+.org 0x80B6ED9C
+    jal   mw_break
+.headersize 0x80941030 - 0x00CDE750            ; ovl_Bg_Heavy_Block
+.org 0x809416E0
+    jal   hb_t_dec
+.org 0x80941E9C
+    jal   hb_t_inc
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
