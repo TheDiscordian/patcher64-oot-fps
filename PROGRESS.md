@@ -19,8 +19,8 @@ injected. Boot CRC at `0x10` (`93D30FBB`/`9FF3024D`) is unchanged from the base
 | Bucket 7 — dungeon torch      | ✅ VERIFIED working (user): "perfect"          |
 | Bucket 2 — gravity            | ✅ VERIFIED (user): fix works, Link not floaty  |
 | Bucket 8 — letterbox draw     | ✅ VERIFIED (user) — also fixed the ocarina pull-out |
-| Bucket 9 — ReDead grab damage | 🔨 BUILT — seed-mod 200→300, 20→30. User-test pending |
-| Bucket 10 — ReDead AI timers  | 🔨 BUILT — sunsSong 600→900, fire 40→60, scream-wait 60→90 / 10→15, grab-wait 15→23 |
+| Bucket 9 — ReDead grab damage | ✅ VERIFIED (user 2026-05-19): "seem to be working well" |
+| Bucket 10 — ReDead AI timers  | ✅ VERIFIED (user 2026-05-19) — same test run |
 | Minigame timers (HUD)         | ✅ payload runtime-patches the on-screen counter |
 | Minigame mechanics (actors)   | ❓ UNVERIFIED — actor sweep pending (181 candidates) |
 | Other enemies/bosses/traps    | ❓ SUSPECTED — actor sweep identified ~20 actors with raw AI timers, pending fix |
