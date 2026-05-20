@@ -57,13 +57,47 @@ The broader actor sweep (~20 more actors with raw AI timers) is documented in `P
 
 ## Build
 
-You need: the OoT decomp built MATCHED for ntsc-1.0 (`zeldaret/oot`), an armips build, and the MIPS binutils. Then:
+The patches assemble against a specific input ROM (`work/oot-redux-decompressed.z64`) you have to produce yourself — for both **legal** reasons (no game data ships here) and **correctness** (offsets are version-pinned to NTSC-U 1.0 + the specific Redux payload).
+
+### What you need
+
+- **`armips`** — the MIPS assembler. Build from [`Kingcom/armips`](https://github.com/Kingcom/armips) or use a packaged binary. `hooks.asm` was tested against armips built from upstream at the time of writing; any recent release should work. Put the resulting binary anywhere — for these instructions assume it's at `tools/armips-src/build/armips`, but you can adjust the path.
+- **Base ROM: `rom/oot-ntsc10.z64`** — your own dump of *The Legend of Zelda: Ocarina of Time*, NTSC-U revision 1.0, native big-endian `.z64` layout (NOT byte-swapped `.v64` or little-endian `.n64`).
+- **`work/oot-redux-decompressed.z64`** — the OoT Redux ROM, decompressed (so armips can patch into the actor overlays directly without recompression). To produce it: run the base ROM through [Patcher64+](https://github.com/SkyBlueEclipse/Patcher64Plus-Tool) with the **Redux** option enabled (no other gameplay changes), then decompress the result. Decompression options include [`z64decompress`](https://github.com/z64tools/z64decompress) or any tool that handles standard OoT Yaz0 segments — many third-party tools work.
+
+### Expected SHA-256 sums
+
+If your files don't match these, the hook offsets will land in the wrong place and the resulting ROM will not boot.
+
+| File | SHA-256 | Size |
+|---|---|---|
+| `rom/oot-ntsc10.z64` (clean NTSC-U 1.0 dump) | `c916ab315fbe82a22169bff13d6b866e9fddc907461eb6b0a227b82acdf5b506` | 33,554,432 bytes |
+| `work/oot-redux-decompressed.z64` (Redux applied, then decompressed) | `a2115060926d64d544aedbdfd57699fb37bd14857b6a15f9b896331602b8ce27` | 57,274,608 bytes |
+| `redux.ppf` (the Patcher64+ Redux delta, for sanity-checking what you applied) | `f1cd134cd1ad54d30f3af1e337de53deda1585604835abe6af4abefc2812cb78` | (varies) |
+
+The Redux PPF lives inside the Patcher64+ tool at `Files/Games/Ocarina of Time/redux.ppf` — that SHA is for the version Patcher64+ shipped at the time this project was last built. If yours differs, the actor offsets may have moved.
+
+You can also sanity-check the base ROM via the header at offset `0x10`: it should read CRC1 `EC7011B7`, CRC2 `7616D72B`, region byte at `0x3E` = `0x45` ('E' = US).
+
+### Build
+
+From the repo root:
 
 ```
 tools/armips-src/build/armips src/hooks.asm
 ```
 
-No CRC step — every patch lands past ROM `0x101000`, beyond the N64 boot-checksum range.
+This writes `work/oot-redux-30fps.z64` (the patched ROM). Paths in the `.asm` files are relative to the working directory armips runs from — always invoke it from the repo root.
+
+A separate **control** ROM (Redux 30 FPS with NONE of the bucket fixes — for A/B comparison) builds with:
+
+```
+tools/armips-src/build/armips src/control.asm
+```
+
+→ `work/oot-redux-30fps-stock.z64`.
+
+No CRC step needed — every patch lands past ROM `0x101000`, beyond the N64 boot-checksum range.
 
 ## License
 
