@@ -65,15 +65,15 @@ The patches assemble against a specific input ROM (`work/oot-redux-decompressed.
 - **Base ROM: `rom/oot-ntsc10.z64`** — your own dump of *The Legend of Zelda: Ocarina of Time*, NTSC-U revision 1.0, native big-endian `.z64` layout (NOT byte-swapped `.v64` or little-endian `.n64`).
 - **`work/oot-redux-decompressed.z64`** — the OoT Redux ROM, decompressed (so armips can patch into the actor overlays directly without recompression). To produce it: run the base ROM through [Patcher64+](https://github.com/SkyBlueEclipse/Patcher64Plus-Tool) with the **Redux** option enabled (no other gameplay changes), then decompress the result. Decompression options include [`z64decompress`](https://github.com/z64tools/z64decompress) or any tool that handles standard OoT Yaz0 segments — many third-party tools work.
 
-### Expected SHA-256 sums
+### Expected SHA-1 sums
 
 If your files don't match these, the hook offsets will land in the wrong place and the resulting ROM will not boot.
 
-| File | SHA-256 | Size |
+| File | SHA-1 | Size |
 |---|---|---|
-| `rom/oot-ntsc10.z64` (clean NTSC-U 1.0 dump) | `c916ab315fbe82a22169bff13d6b866e9fddc907461eb6b0a227b82acdf5b506` | 33,554,432 bytes |
-| `work/oot-redux-decompressed.z64` (Redux applied, then decompressed) | `a2115060926d64d544aedbdfd57699fb37bd14857b6a15f9b896331602b8ce27` | 57,274,608 bytes |
-| `redux.ppf` (the Patcher64+ Redux delta, for sanity-checking what you applied) | `f1cd134cd1ad54d30f3af1e337de53deda1585604835abe6af4abefc2812cb78` | (varies) |
+| `rom/oot-ntsc10.z64` (clean NTSC-U 1.0 dump) | `ad69c91157f6705e8ab06c79fe08aad47bb57ba7` | 33,554,432 bytes |
+| `work/oot-redux-decompressed.z64` (Redux applied, then decompressed) | `5cc5cdb3bc946c8be0483f2b8b681db5daa82ecf` | 57,274,608 bytes |
+| `redux.ppf` (the Patcher64+ Redux delta, for sanity-checking what you applied) | `1736ce1623cd65a994e9254359b37109942dfa5d` | (varies) |
 
 The Redux PPF lives inside the Patcher64+ tool at `Files/Games/Ocarina of Time/redux.ppf` — that SHA is for the version Patcher64+ shipped at the time this project was last built. If yours differs, the actor offsets may have moved.
 
