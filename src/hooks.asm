@@ -276,6 +276,342 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 71: spells + ocarina effects + misc NPCs (25 sites) — tick-mod ----
+; Magic_Dark (Nayru's Love?), Magic_Wind (Farore's Wind), En_M_Thunder
+; (Din's Fire trail), En_Ice_Hono (Ice Cavern blue flame), En_Light
+; (light effect), Item_Shield (shield item), Obj_Bean (bean plant),
+; Obj_Lift (sliding platform), Obj_Lightswitch (sun-ray switch),
+; Obj_Oshihiki (push block), Obj_Makekinsuta (gold-skulltula token),
+; Oceff_Spot/Storm (ocarina effects), Shot_Sun (sun-fairy spawner),
+; En_Trap (trap actor), En_Wall_Tubo (wall pot), En_Ma1/Ma3 (Malon),
+; En_Md (Mido), En_Hy (Hyrule townsfolk).
+
+fn_magic_dark_t3_a2_i:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_magic_dark_t3_a2_i_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_magic_dark_t3_a2_i_st
+    nop
+    addiu t3, t3, -1
+fn_magic_dark_t3_a2_i_st:
+    jr    ra
+    sh    t3, 0x13C(a2)
+
+fn_magic_dark_t3_s0_i:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_magic_dark_t3_s0_i_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_magic_dark_t3_s0_i_st
+    nop
+    addiu t3, t3, -1
+fn_magic_dark_t3_s0_i_st:
+    jr    ra
+    sh    t3, 0x13C(s0)
+
+fn_magic_wind_t7_a3_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_magic_wind_t7_a3_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_magic_wind_t7_a3_d_st
+    nop
+    addiu t7, t7, 1
+fn_magic_wind_t7_a3_d_st:
+    jr    ra
+    sh    t7, 0x15C(a3)
+
+fn_magic_wind_t6_a0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_magic_wind_t6_a0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_magic_wind_t6_a0_d_st
+    nop
+    addiu t6, t6, 1
+fn_magic_wind_t6_a0_d_st:
+    jr    ra
+    sh    t6, 0x15C(a0)
+
+fn_magic_wind_t7_a0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_magic_wind_t7_a0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_magic_wind_t7_a0_d_st
+    nop
+    addiu t7, t7, 1
+fn_magic_wind_t7_a0_d_st:
+    jr    ra
+    sh    t7, 0x15C(a0)
+
+fn_m_thunder_t1_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_m_thunder_t1_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_m_thunder_t1_s0_d_st
+    nop
+    addiu t1, t1, 1
+fn_m_thunder_t1_s0_d_st:
+    jr    ra
+    sh    t1, 0x1B4(s0)
+
+fn_ice_hono_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_ice_hono_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_ice_hono_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+fn_ice_hono_t6_s0_d_st:
+    jr    ra
+    sh    t6, 0x142(s0)
+
+fn_light_e_t1_a2_i:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_light_e_t1_a2_i_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_light_e_t1_a2_i_st
+    nop
+    addiu t1, t1, -1
+fn_light_e_t1_a2_i_st:
+    jr    ra
+    sb    t1, 0x13C(a2)
+
+fn_item_shield_t0_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_item_shield_t0_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_item_shield_t0_s0_d_st
+    nop
+    addiu t0, t0, 1
+fn_item_shield_t0_s0_d_st:
+    jr    ra
+    sh    t0, 0x18A(s0)
+
+fn_item_shield_t4_s3_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_item_shield_t4_s3_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_item_shield_t4_s3_d_st
+    nop
+    addiu t4, t4, 1
+fn_item_shield_t4_s3_d_st:
+    jr    ra
+    sh    t4, 0x18A(s3)
+
+fn_obj_bean_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_obj_bean_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_obj_bean_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+fn_obj_bean_t6_s0_d_st:
+    jr    ra
+    sh    t6, 0x1A4(s0)
+
+fn_obj_lift_t6_a0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_obj_lift_t6_a0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_obj_lift_t6_a0_d_st
+    nop
+    addiu t6, t6, 1
+fn_obj_lift_t6_a0_d_st:
+    jr    ra
+    sh    t6, 0x15E(a0)
+
+fn_obj_lights_t8_s0_i:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_obj_lights_t8_s0_i_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_obj_lights_t8_s0_i_st
+    nop
+    addiu t8, t8, -1
+fn_obj_lights_t8_s0_i_st:
+    jr    ra
+    sh    t8, 0x1A0(s0)
+
+fn_obj_lights_t2_a3_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_obj_lights_t2_a3_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_obj_lights_t2_a3_d_st
+    nop
+    addiu t2, t2, 1
+fn_obj_lights_t2_a3_d_st:
+    jr    ra
+    sh    t2, 0x1A0(a3)
+
+fn_obj_oshih_t0_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_obj_oshih_t0_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_obj_oshih_t0_a2_d_st
+    nop
+    addiu t0, t0, 1
+fn_obj_oshih_t0_a2_d_st:
+    jr    ra
+    sh    t0, 0x15A(a2)
+
+fn_obj_makek_t3_s0_i:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_obj_makek_t3_s0_i_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_obj_makek_t3_s0_i_st
+    nop
+    addiu t3, t3, -1
+fn_obj_makek_t3_s0_i_st:
+    jr    ra
+    sh    t3, 0x140(s0)
+
+fn_oceff_spot_t6_a0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_oceff_spot_t6_a0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_oceff_spot_t6_a0_d_st
+    nop
+    addiu t6, t6, 1
+fn_oceff_spot_t6_a0_d_st:
+    jr    ra
+    sh    t6, 0x168(a0)
+
+fn_oceff_storm_t0_a0_i:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_oceff_storm_t0_a0_i_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_oceff_storm_t0_a0_i_st
+    nop
+    addiu t0, t0, -1
+fn_oceff_storm_t0_a0_i_st:
+    jr    ra
+    sh    t0, 0x13C(a0)
+
+fn_shot_sun_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_shot_sun_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_shot_sun_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+fn_shot_sun_t6_s0_d_st:
+    jr    ra
+    sh    t6, 0x192(s0)
+
+fn_trap_t8_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_trap_t8_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_trap_t8_s0_d_st
+    nop
+    addiu t8, t8, 1
+fn_trap_t8_s0_d_st:
+    jr    ra
+    sw    t8, 0x13C(s0)
+
+fn_wall_tubo_t6_a0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_wall_tubo_t6_a0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_wall_tubo_t6_a0_d_st
+    nop
+    addiu t6, t6, 1
+fn_wall_tubo_t6_a0_d_st:
+    jr    ra
+    sh    t6, 0x140(a0)
+
+fn_ma1_t6_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_ma1_t6_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_ma1_t6_a2_d_st
+    nop
+    addiu t6, t6, 1
+fn_ma1_t6_a2_d_st:
+    jr    ra
+    sh    t6, 0x1D2(a2)
+
+fn_ma3_t6_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_ma3_t6_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_ma3_t6_a2_d_st
+    nop
+    addiu t6, t6, 1
+fn_ma3_t6_a2_d_st:
+    jr    ra
+    sh    t6, 0x1FC(a2)
+
+fn_md_t6_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_md_t6_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_md_t6_a2_d_st
+    nop
+    addiu t6, t6, 1
+fn_md_t6_a2_d_st:
+    jr    ra
+    sh    t6, 0x1FC(a2)
+
+fn_hy_t6_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fn_hy_t6_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fn_hy_t6_a2_d_st
+    nop
+    addiu t6, t6, 1
+fn_hy_t6_a2_d_st:
+    jr    ra
+    sh    t6, 0x20A(a2)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +674,78 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 71 injections ----
+.headersize 0x80A2BA10 - 0x00DB5540            ; ovl_Magic_Dark
+.org 0x80A2BBB0
+    jal   fn_magic_dark_t3_a2_i
+.org 0x80A2BED0
+    jal   fn_magic_dark_t3_s0_i
+.headersize 0x8095BA90 - 0x00CF9120            ; ovl_Magic_Wind
+.org 0x8095C1E8
+    jal   fn_magic_wind_t7_a3_d
+.org 0x8095C2AC
+    jal   fn_magic_wind_t6_a0_d
+.org 0x8095C31C
+    jal   fn_magic_wind_t7_a0_d
+.headersize 0x808FF0C0 - 0x00C9C880            ; ovl_En_M_Thunder
+.org 0x808FF918
+    jal   fn_m_thunder_t1_s0_d
+.headersize 0x80A2A050 - 0x00DB3B80            ; ovl_En_Ice_Hono
+.org 0x80A2AB48
+    jal   fn_ice_hono_t6_s0_d
+.headersize 0x80866B30 - 0x00C04410            ; ovl_En_Light
+.org 0x80866DF0
+    jal   fn_light_e_t1_a2_i
+.headersize 0x80A28410 - 0x00DB1F40            ; ovl_Item_Shield
+.org 0x80A28850
+    jal   fn_item_shield_t0_s0_d
+.org 0x80A28C10
+    jal   fn_item_shield_t4_s3_d
+.headersize 0x80A80D90 - 0x00E036D0            ; ovl_Obj_Bean
+.org 0x80A82964
+    jal   fn_obj_bean_t6_s0_d
+.headersize 0x80A85C10 - 0x00E08550            ; ovl_Obj_Lift
+.org 0x80A85F70
+    jal   fn_obj_lift_t6_a0_d
+.headersize 0x80ABC320 - 0x00E3C170            ; ovl_Obj_Lightswitch
+.org 0x80ABD1F4
+    jal   fn_obj_lights_t8_s0_i
+.org 0x80ABD46C
+    jal   fn_obj_lights_t2_a3_d
+.headersize 0x80A4EFC0 - 0x00DD1A00            ; ovl_Obj_Oshihiki
+.org 0x80A4F0E8
+    jal   fn_obj_oshih_t0_a2_d
+.headersize 0x80B7EBC0 - 0x00EFA2E0            ; ovl_Obj_Makekinsuta
+.org 0x80B7EC70
+    jal   fn_obj_makek_t3_s0_i
+.headersize 0x80B19D10 - 0x00E95440            ; ovl_Oceff_Spot
+.org 0x80B1A730
+    jal   fn_oceff_spot_t6_a0_d
+.headersize 0x80B38E70 - 0x00EB45A0            ; ovl_Oceff_Storm
+.org 0x80B39880
+    jal   fn_oceff_storm_t0_a0_i
+.headersize 0x80B226C0 - 0x00E9DDF0            ; ovl_Shot_Sun
+.org 0x80B22B6C
+    jal   fn_shot_sun_t6_s0_d
+.headersize 0x80920340 - 0x00CBDAB0            ; ovl_En_Trap
+.org 0x80920D88
+    jal   fn_trap_t8_s0_d
+.headersize 0x80B71920 - 0x00EED040            ; ovl_En_Wall_Tubo
+.org 0x80B71B80
+    jal   fn_wall_tubo_t6_a0_d
+.headersize 0x809F0A20 - 0x00D7E110            ; ovl_En_Ma1
+.org 0x809F1340
+    jal   fn_ma1_t6_a2_d
+.headersize 0x80B76600 - 0x00EF1D20            ; ovl_En_Ma3
+.org 0x80B76FDC
+    jal   fn_ma3_t6_a2_d
+.headersize 0x80AE2870 - 0x00E61B50            ; ovl_En_Md
+.org 0x80AE46EC
+    jal   fn_md_t6_a2_d
+.headersize 0x80AE4EE0 - 0x00E641C0            ; ovl_En_Hy
+.org 0x80AE6F04
+    jal   fn_hy_t6_a2_d
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
