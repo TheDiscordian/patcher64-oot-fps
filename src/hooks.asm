@@ -276,6 +276,118 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 51: En_GeldB + En_Heishi1 + En_Niw timers — tick-mod ----
+; Three NPC/enemy actors bundled (2+3+3 sites):
+;   En_GeldB (white Gerudo guard - throws into jail): unk + ice timers
+;   En_Heishi1 (Hyrule Castle / castle-town guards): active, head, waypoint
+;   En_Niw (Cucco): three sfx-pulse timers for cluck/move/event audio
+; All ==0/!=0 gates. Tick-mod via Pattern E.
+
+npc_unk_s0_t5:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, npc_unk_s0_t5_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, npc_unk_s0_t5_st
+    nop
+    addiu t5, t5, 1
+npc_unk_s0_t5_st:
+    jr    ra
+    sh    t5, 0x2E8(s0)
+
+npc_ice_s5_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, npc_ice_s5_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, npc_ice_s5_t8_st
+    nop
+    addiu t8, t8, 1
+npc_ice_s5_t8_st:
+    jr    ra
+    sh    t8, 0x2EC(s5)
+
+npc_active_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, npc_active_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, npc_active_s0_t7_st
+    nop
+    addiu t7, t7, -1
+npc_active_s0_t7_st:
+    jr    ra
+    sh    t7, 0x250(s0)
+
+npc_head_v1_t9:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, npc_head_v1_t9_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, npc_head_v1_t9_st
+    nop
+    addiu t9, t9, 1
+npc_head_v1_t9_st:
+    jr    ra
+    sh    t9, 0x294(v1)
+
+npc_waypoint_s0_t0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, npc_waypoint_s0_t0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, npc_waypoint_s0_t0_st
+    nop
+    addiu t0, t0, 1
+npc_waypoint_s0_t0_st:
+    jr    ra
+    sh    t0, 0x260(s0)
+
+npc_sfx1_s1_t9:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, npc_sfx1_s1_t9_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, npc_sfx1_s1_t9_st
+    nop
+    addiu t9, t9, 1
+npc_sfx1_s1_t9_st:
+    jr    ra
+    sh    t9, 0x250(s1)
+
+npc_sfx2_s1_t0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, npc_sfx2_s1_t0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, npc_sfx2_s1_t0_st
+    nop
+    addiu t0, t0, 1
+npc_sfx2_s1_t0_st:
+    jr    ra
+    sh    t0, 0x252(s1)
+
+npc_sfx3_s1_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, npc_sfx3_s1_t1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, npc_sfx3_s1_t1_st
+    nop
+    addiu t1, t1, 1
+npc_sfx3_s1_t1_st:
+    jr    ra
+    sh    t1, 0x254(s1)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +450,27 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 51 injections ----
+.headersize 0x80B41110 - 0x00EBC840            ; ovl_En_GeldB
+.org 0x80B41CA0
+    jal   npc_unk_s0_t5
+.org 0x80B45B60
+    jal   npc_ice_s5_t8
+.headersize 0x80938580 - 0x00CD5CA0            ; ovl_En_Heishi1
+.org 0x80939398
+    jal   npc_active_s0_t7
+.org 0x809393BC
+    jal   npc_head_v1_t9
+.org 0x809393D4
+    jal   npc_waypoint_s0_t0
+.headersize 0x8088A4C0 - 0x00C27D90            ; ovl_En_Niw
+.org 0x8088C5EC
+    jal   npc_sfx1_s1_t9
+.org 0x8088C5FC
+    jal   npc_sfx2_s1_t0
+.org 0x8088C60C
+    jal   npc_sfx3_s1_t1
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
