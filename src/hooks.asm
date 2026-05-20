@@ -276,6 +276,207 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 60: En_Dodongo + En_Dodojr — tick-mod ----
+; Adult Dodongo (Dodongo's Cavern enemy) + Baby Dodongo (Dodongo's
+; Cavern small worm enemy). Different actors despite the name overlap.
+; All ==0/!=0 gates. Tick-mod via Pattern E.
+
+do_t_a2_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, do_t_a2_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, do_t_a2_t6_st
+    nop
+    addiu t6, t6, 1
+do_t_a2_t6_st:
+    jr    ra
+    sh    t6, 0x2FC(a2)
+
+do_t_s1_t5:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, do_t_s1_t5_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, do_t_s1_t5_st
+    nop
+    addiu t5, t5, 1
+do_t_s1_t5_st:
+    jr    ra
+    sh    t5, 0x2FC(s1)
+
+do_retreat:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, do_retreat_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, do_retreat_st
+    nop
+    addiu t6, t6, 1
+do_retreat_st:
+    jr    ra
+    sh    t6, 0x2FE(s0)
+
+do_t_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, do_t_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, do_t_s0_t8_st
+    nop
+    addiu t8, t8, 1
+do_t_s0_t8_st:
+    jr    ra
+    sh    t8, 0x2FC(s0)
+
+do_t_s0_t2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, do_t_s0_t2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, do_t_s0_t2_st
+    nop
+    addiu t2, t2, 1
+do_t_s0_t2_st:
+    jr    ra
+    sh    t2, 0x2FC(s0)
+
+do_t_s0_t5:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, do_t_s0_t5_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, do_t_s0_t5_st
+    nop
+    addiu t5, t5, 1
+do_t_s0_t5_st:
+    jr    ra
+    sh    t5, 0x2FC(s0)
+
+do_ice:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, do_ice_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, do_ice_st
+    nop
+    addiu t2, t2, 1
+do_ice_st:
+    jr    ra
+    sh    t2, 0x302(s0)
+
+dj_counter_a0_t3:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dj_counter_a0_t3_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dj_counter_a0_t3_st
+    nop
+    addiu t3, t3, 1
+dj_counter_a0_t3_st:
+    jr    ra
+    sh    t3, 0x1EC(a0)
+
+dj_crawl:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dj_crawl_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dj_crawl_st
+    nop
+    addiu t6, t6, 1
+dj_crawl_st:
+    jr    ra
+    sh    t6, 0x1F4(s0)
+
+dj_t_a0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dj_t_a0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dj_t_a0_t6_st
+    nop
+    addiu t6, t6, 1
+dj_t_a0_t6_st:
+    jr    ra
+    sh    t6, 0x1F2(a0)
+
+dj_stun:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dj_stun_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dj_stun_st
+    nop
+    addiu t6, t6, 1
+dj_stun_st:
+    jr    ra
+    sh    t6, 0x1EE(a0)
+
+dj_t_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dj_t_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dj_t_s0_t7_st
+    nop
+    addiu t7, t7, 1
+dj_t_s0_t7_st:
+    jr    ra
+    sh    t7, 0x1F2(s0)
+
+dj_counter_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dj_counter_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dj_counter_s0_t8_st
+    nop
+    addiu t8, t8, 1
+dj_counter_s0_t8_st:
+    jr    ra
+    sh    t8, 0x1EC(s0)
+
+dj_t_s0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dj_t_s0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dj_t_s0_t6_st
+    nop
+    addiu t6, t6, 1
+dj_t_s0_t6_st:
+    jr    ra
+    sh    t6, 0x1F2(s0)
+
+dj_freeze:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, dj_freeze_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, dj_freeze_st
+    nop
+    addiu t6, t6, 1
+dj_freeze_st:
+    jr    ra
+    sh    t6, 0x1F0(a0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +539,40 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 60 injections ----
+.headersize 0x808732E0 - 0x00C10BB0            ; ovl_En_Dodongo
+.org 0x80873D6C
+    jal   do_t_a2_t6
+.org 0x80874184
+    jal   do_t_s1_t5
+.org 0x80874784
+    jal   do_retreat
+.org 0x80874790
+    jal   do_t_s0_t8
+.org 0x808749F8
+    jal   do_t_s0_t2
+.org 0x80874CB0
+    jal   do_t_s0_t5
+.org 0x808756A4
+    jal   do_ice
+.headersize 0x808BA5F0 - 0x00C57E90            ; ovl_En_Dodojr
+.org 0x808BAB90
+    jal   dj_counter_a0_t3
+.org 0x808BB804
+    jal   dj_crawl
+.org 0x808BB994
+    jal   dj_t_a0_t6
+.org 0x808BBB44
+    jal   dj_stun
+.org 0x808BBC84
+    jal   dj_t_s0_t7
+.org 0x808BBDC8
+    jal   dj_counter_s0_t8
+.org 0x808BBE58
+    jal   dj_t_s0_t6
+.org 0x808BBEAC
+    jal   dj_freeze
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
