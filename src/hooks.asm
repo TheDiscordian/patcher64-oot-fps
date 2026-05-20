@@ -276,6 +276,152 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 57: En_Horse (Epona) AI timers — tick-mod ----
+; Epona has many timer fields driving ride feel:
+;   soundTimer (++) - indexes sAnimSoundFrames[] (VALUE keyed!)
+;   noInputTimer (--) - rider-not-inputting cooldown
+;   followTimer (++) - turn-to-player threshold (> 300)
+;   hbaTimer / bridgeJumpTimer (++) - horseback archery + bridge jump
+;     bridgeJumpTimer used in formula timeSq = t*t for arc physics!
+;   boostTimer (++) - whip-boost cooldown ((16 - boostTimer) > 0)
+;   blinkTimer (++) - eye-blink anim
+;
+; Value-keyed: soundTimer indexes array, bridgeJumpTimer used in
+; physics formula, boost+follow have threshold checks. Tick-mod via
+; Pattern E is mandatory.
+; 10 sites, 10 unique hook variants.
+
+hr_sound:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_sound_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_sound_st
+    nop
+    addiu t2, t2, -1
+hr_sound_st:
+    jr    ra
+    sw    t2, 0x208(s0)
+
+hr_noInput1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_noInput1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_noInput1_st
+    nop
+    addiu t7, t7, 1
+hr_noInput1_st:
+    jr    ra
+    sw    t7, 0x140(s0)
+
+hr_noInput2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_noInput2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_noInput2_st
+    nop
+    addiu t7, t7, 1
+hr_noInput2_st:
+    jr    ra
+    sw    t7, 0x140(s0)
+
+hr_follow:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_follow_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_follow_st
+    nop
+    addiu t0, t0, -1
+hr_follow_st:
+    jr    ra
+    sh    t0, 0x240(s0)
+
+hr_hba:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_hba_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_hba_st
+    nop
+    addiu t9, t9, -1
+hr_hba_st:
+    jr    ra
+    sw    t9, 0x398(a3)
+
+hr_bridgeJump:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_bridgeJump_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_bridgeJump_st
+    nop
+    addiu t7, t7, -1
+hr_bridgeJump_st:
+    jr    ra
+    sw    t7, 0x3AC(a0)
+
+hr_boost1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_boost1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_boost1_st
+    nop
+    addiu t9, t9, -1
+hr_boost1_st:
+    jr    ra
+    sw    t9, 0x230(s0)
+
+hr_boost2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_boost2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_boost2_st
+    nop
+    addiu t1, t1, -1
+hr_boost2_st:
+    jr    ra
+    sw    t1, 0x230(s0)
+
+hr_blink1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_blink1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_blink1_st
+    nop
+    addiu t8, t8, -1
+hr_blink1_st:
+    jr    ra
+    sb    t8, 0x36A(s0)
+
+hr_blink2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, hr_blink2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, hr_blink2_st
+    nop
+    addiu t0, t0, -1
+hr_blink2_st:
+    jr    ra
+    sb    t0, 0x36A(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +484,29 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 57 injections ----
+.headersize 0x808781F0 - 0x00C15AC0            ; ovl_En_Horse
+.org 0x80878974
+    jal   hr_sound
+.org 0x80879880
+    jal   hr_noInput1
+.org 0x8087ADD4
+    jal   hr_noInput2
+.org 0x8087CA9C
+    jal   hr_follow
+.org 0x8087E6F0
+    jal   hr_hba
+.org 0x8087F6F0
+    jal   hr_bridgeJump
+.org 0x808810E0
+    jal   hr_boost1
+.org 0x808811A0
+    jal   hr_boost2
+.org 0x80881B80
+    jal   hr_blink1
+.org 0x80881B9C
+    jal   hr_blink2
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
