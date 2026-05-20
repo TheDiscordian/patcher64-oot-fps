@@ -1,6 +1,20 @@
 # Patcher64+ OoT 30 FPS — Fix Project
 
-Fixing the documented "Known Issues" of [Patcher64+](https://github.com/SkyBlueEclipse/Patcher64Plus-Tool)'s Ocarina of Time 30 FPS mode (on a Redux ROM, NTSC-U 1.0 base).
+A small armips-assembled patch layer that sits **on top of** an
+[OoT Redux](https://github.com/Roman971/OoT-Redux) ROM that's already been put
+through [Patcher64+](https://github.com/SkyBlueEclipse/Patcher64Plus-Tool)'s
+30 FPS mode. Stock Patcher64+ 30 FPS has a documented list of "Known Issues"
+where various game timings run ~1.5× too fast (bomb fuses too short, lit
+torches burn out early, sword combos impossible, etc.) — this project patches
+those by injecting `jal` hooks into the Patcher64+ payload's free space, so
+the resulting ROM is "Patcher64+ Redux 30 FPS, but the timings actually match
+20 FPS gameplay".
+
+🎯 **What this project changes**: it does NOT alter the OoT game logic, the
+Redux content, or the Patcher64+ payload's structure. It only injects small
+fps-gated counter-rescaling hooks (mostly seed-mod or 2/3-tick on raw
+per-frame timers). At 20 FPS the patches no-op; at 30 FPS each fix scales
+its counter back to the wall-clock cadence it would have at 20 FPS.
 
 This repo holds **only the patch source and project docs**. The actual ROM, base game decomp, build toolchain, and the Patcher64+ tool itself all live outside this repo (they're large and/or copyright-sensitive — see `.gitignore`).
 
