@@ -276,6 +276,109 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 61: Obj_Switch + Obj_Timeblock — tick-mod ----
+; Two object-class actors bundled (3 + 4 sites):
+;   Obj_Switch (eye-switch / step-switch / crystal-switch):
+;     releaseTimer (SUBTYPE_HOLD release delay)
+;     disableAcTimer (post-hit collision cooldown)
+;     cooldownTimer (between activations)
+;   Obj_Timeblock (Song-of-Time conjurable block):
+;     demoEffectTimer + demoEffectFirstPartTimer (spawn-in fx)
+;     songEndTimer (despawn-when-song-ends fade)
+; All ==0/!=0 gates. Tick-mod via Pattern E.
+
+obj_release:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, obj_release_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, obj_release_st
+    nop
+    addiu t6, t6, 1
+obj_release_st:
+    jr    ra
+    sh    t6, 0x158(a3)
+
+obj_cooldown:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, obj_cooldown_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, obj_cooldown_st
+    nop
+    addiu t7, t7, 1
+obj_cooldown_st:
+    jr    ra
+    sh    t7, 0x15C(a3)
+
+obj_disableAc:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, obj_disableAc_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, obj_disableAc_st
+    nop
+    addiu t3, t3, 1
+obj_disableAc_st:
+    jr    ra
+    sh    t3, 0x15A(a3)
+
+obj_songEnd:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, obj_songEnd_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, obj_songEnd_st
+    nop
+    addiu t2, t2, 1
+obj_songEnd_st:
+    jr    ra
+    sh    t2, 0x15E(a0)
+
+obj_demoFxFP_s0_t4:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, obj_demoFxFP_s0_t4_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, obj_demoFxFP_s0_t4_st
+    nop
+    addiu t4, t4, 1
+obj_demoFxFP_s0_t4_st:
+    jr    ra
+    sh    t4, 0x160(s0)
+
+obj_demoFxFP_s0_t0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, obj_demoFxFP_s0_t0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, obj_demoFxFP_s0_t0_st
+    nop
+    addiu t0, t0, 1
+obj_demoFxFP_s0_t0_st:
+    jr    ra
+    sh    t0, 0x160(s0)
+
+obj_demoFx:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, obj_demoFx_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, obj_demoFx_st
+    nop
+    addiu t6, t6, 1
+obj_demoFx_st:
+    jr    ra
+    sh    t6, 0x15C(a3)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +441,24 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 61 injections ----
+.headersize 0x80A83A90 - 0x00E063D0            ; ovl_Obj_Switch
+.org 0x80A84E74
+    jal   obj_release
+.org 0x80A84E84
+    jal   obj_cooldown
+.org 0x80A84F28
+    jal   obj_disableAc
+.headersize 0x80B7F860 - 0x00EFAF80            ; ovl_Obj_Timeblock
+.org 0x80B7FD7C
+    jal   obj_songEnd
+.org 0x80B7FE84
+    jal   obj_demoFxFP_s0_t4
+.org 0x80B7FF90
+    jal   obj_demoFxFP_s0_t0
+.org 0x80B80208
+    jal   obj_demoFx
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
