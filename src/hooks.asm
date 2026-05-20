@@ -274,6 +274,40 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 12: scale Boss_Goma (Gohma) patienceTimer seed by 1.5 in 30 fps ----
+; this->patienceTimer = 200 at z_boss_goma.c lines 997 + 1424; decrement at
+; line 1642 (raw `timer--`). When patienceTimer reaches 0 AND player is
+; close (z_boss_goma.c:1445), Gohma lunges. 200 frames @ 20 fps = 10 s wait;
+; @ 30 fps raw = 6.67 s — Gohma's pre-lunge patience runs 1.5× too short.
+; struct offset 0x186 in this build.
+
+goma_patience_1_seed:                          ; replaces li t6,200 at 0x808A96A0
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, gp1_done                         ; 20 fps -> keep t6 = 200
+    li    t6, 200                              ; (delay slot) original value
+    li    t6, 300                              ; 30 fps -> 200 * 1.5
+gp1_done:
+    jr    ra
+    nop
+
+; Site 2 sits inside the function epilogue:
+;   0x808AAA98: li   t7, 200       <-- replace with jal goma_patience_2_seed
+;   0x808AAA9C: sh   t7, 390(t8)   <-- delay slot of jal: stores STALE t7
+;   0x808AAAA0: lw   ra, 20(sp)    <-- caller's ra restored here
+; The delay-slot sh fires with whatever t7 held before (garbage), so the hook
+; unconditionally overwrites the field with the correct value. t8 already
+; holds the struct ptr from `lw t8,32(sp)` at 0x808AAA94 (pre-jal).
+goma_patience_2_seed:                          ; replaces li t7,200 at 0x808AAA98
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, gp2_store                        ; 20 fps -> rewrite with 200
+    li    t7, 200                              ; (delay slot) value for 20 fps
+    li    t7, 300                              ; 30 fps -> 200 * 1.5
+gp2_store:
+    jr    ra
+    sh    t7, 0x186(t8)                        ; (delay slot) authoritative store
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -336,6 +370,13 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 12 — ovl_Boss_Goma (Gohma patienceTimer)
+.headersize 0x808A7370 - 0x00C44C30
+.org 0x808A96A0                                ; was `li t6,200` (patienceTimer=200 site 1)
+    jal   goma_patience_1_seed
+.org 0x808AAA98                                ; was `li t7,200` (patienceTimer=200 site 2)
+    jal   goma_patience_2_seed
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
