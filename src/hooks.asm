@@ -280,9 +280,11 @@ sgs_store:
 ;   header 0x25C attackTimer   -> 0x24C
 ;   header 0x25E iceTimer      -> 0x24E
 ;   header 0x260 deathTimer    -> 0x250
-; Skip cooldownTimer=5 (briefly 0.25 s, sub-perceptual). Skip attackTimer in
-; EnAm_Sleep at the `li t5,200` site because it sits in `bnez at` delay slot;
-; patch the `sh t5,588(s0)` store instead.
+; cooldownTimer has two seeds: 40 (SetupCooldown) and 5 (SetupRicochet — the
+; brief stagger after ricochet damage). Both patched. The Ricochet `li t8,5`
+; sits in `beqz v0` delay slot, so we patch its `sh t8,586(a0)` store instead.
+; attackTimer's `li t5,200` similarly sits in `bnez at` delay slot; patch the
+; `sh t5,588(s0)` store.
 
 armos_cooldown_seed:                           ; replaces li t7,40 at 0x808F973C
     lui   t0, 0x8042
@@ -323,6 +325,16 @@ armos_ice_seed:                                ; replaces li t0,48 at 0x808FA774
 ais_done:
     jr    ra
     nop
+
+armos_ricochet_seed:                           ; replaces sh t8,586(a0) at 0x808F99EC
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, ars_store                        ; 20 fps -> keep t8 = 5
+    nop
+    li    t8, 8                                ; 30 fps -> 5*1.5 = 7.5 -> 8 (round up)
+ars_store:
+    jr    ra
+    sh    t8, 0x24A(a0)                        ; (delay slot) original store (a0, not s0)
 
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
@@ -397,6 +409,8 @@ ais_done:
     jal   armos_death_seed
 .org 0x808FA774                                ; was `li t0,48` (iceTimer=48)
     jal   armos_ice_seed
+.org 0x808F99EC                                ; was `sh t8,586(a0)` (cooldownTimer=5 in SetupRicochet)
+    jal   armos_ricochet_seed
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
