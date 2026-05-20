@@ -276,6 +276,68 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 24: Trap door (Door_Killer) timer tick-mod ----
+; Dungeon trap doors that spin/wobble before slamming. Source has many
+; value-keyed checks (timer == 4 line 338, timer == 2 line 374, timer == 16
+; / == 8 line 387). Pattern E tick-mod across every decrement site.
+; struct.timer at offset 0x20A (header /* 0x21A */), u16.
+
+door_kill_a0_t5:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, dka0t5_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, dka0t5_store
+    nop
+    addiu t5, t5, 1
+dka0t5_store:
+    sh    t5, 0x20A(a0)
+    jr    ra
+    lh    v0, 0x20A(a0)
+
+door_kill_a2_t6:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, dka2t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, dka2t6_store
+    nop
+    addiu t6, t6, 1
+dka2t6_store:
+    sh    t6, 0x20A(a2)
+    jr    ra
+    lh    v0, 0x20A(a2)
+
+door_kill_s0_t6:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, dks0t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, dks0t6_store
+    nop
+    addiu t6, t6, 1
+dks0t6_store:
+    sh    t6, 0x20A(s0)
+    jr    ra
+    lh    v0, 0x20A(s0)
+
+door_kill_a0_t6:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, dka0t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, dka0t6_store
+    nop
+    addiu t6, t6, 1
+dka0t6_store:
+    sh    t6, 0x20A(a0)
+    jr    ra
+    lh    v0, 0x20A(a0)
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +400,17 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 24 — ovl_Door_Killer (dungeon trap doors)
+.headersize 0x80B74270 - 0x00EEF990
+.org 0x80B74858                                ; sh t5,522(a0)
+    jal   door_kill_a0_t5
+.org 0x80B7498C                                ; sh t6,522(a2)
+    jal   door_kill_a2_t6
+.org 0x80B74F34                                ; sh t6,522(s0)
+    jal   door_kill_s0_t6
+.org 0x80B75070                                ; sh t6,522(a0)
+    jal   door_kill_a0_t6
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
