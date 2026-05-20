@@ -276,6 +276,342 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 41: Boss_Va (Barinade) state-machine timers — tick-mod ----
+; Barinade (Jabu-Jabu boss) uses three counters:
+;   timer (s32 @ 0x188) - master state machine, seeds 7500/45000 too
+;   timer2 (s16 @ 0x18C) - secondary phase counter
+;   invincibilityTimer (s8 @ 0x186) - post-hit i-frames
+; Source has timer == specific values and timer >= 45000 checks ->
+; tick-mod (Pattern E) preserves value sequence so all phase trans-
+; itions fire wall-clock-correct at 30 fps.
+; 33 timer-modifying sites, ~25 unique (op, reg, base, amt) combos.
+
+va_sw_s1_t4_d_188:                                ; sw undo: t4 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s1_t4_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s1_t4_d_188_st
+    nop
+    addiu t4, t4, 1
+va_sw_s1_t4_d_188_st:
+    jr    ra
+    sw    t4, 0x188(s1)
+
+va_sw_s1_t7_d_188:                                ; sw undo: t7 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s1_t7_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s1_t7_d_188_st
+    nop
+    addiu t7, t7, 1
+va_sw_s1_t7_d_188_st:
+    jr    ra
+    sw    t7, 0x188(s1)
+
+va_sw_s1_t6_d_188:                                ; sw undo: t6 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s1_t6_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s1_t6_d_188_st
+    nop
+    addiu t6, t6, 1
+va_sw_s1_t6_d_188_st:
+    jr    ra
+    sw    t6, 0x188(s1)
+
+va_sw_s1_t8_d_188:                                ; sw undo: t8 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s1_t8_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s1_t8_d_188_st
+    nop
+    addiu t8, t8, 1
+va_sw_s1_t8_d_188_st:
+    jr    ra
+    sw    t8, 0x188(s1)
+
+va_sw_s1_t3_d_188:                                ; sw undo: t3 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s1_t3_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s1_t3_d_188_st
+    nop
+    addiu t3, t3, 1
+va_sw_s1_t3_d_188_st:
+    jr    ra
+    sw    t3, 0x188(s1)
+
+va_sw_s1_t9_d_188:                                ; sw undo: t9 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s1_t9_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s1_t9_d_188_st
+    nop
+    addiu t9, t9, 1
+va_sw_s1_t9_d_188_st:
+    jr    ra
+    sw    t9, 0x188(s1)
+
+va_sw_s0_t5_d_188:                                ; sw undo: t5 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s0_t5_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s0_t5_d_188_st
+    nop
+    addiu t5, t5, 1
+va_sw_s0_t5_d_188_st:
+    jr    ra
+    sw    t5, 0x188(s0)
+
+va_sh_s0_t1_d_18c:                                ; sh undo: t1 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sh_s0_t1_d_18c_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sh_s0_t1_d_18c_st
+    nop
+    addiu t1, t1, 1
+va_sh_s0_t1_d_18c_st:
+    jr    ra
+    sh    t1, 0x18C(s0)
+
+va_sw_s0_t9_i_188:                                ; sw undo: t9 -= 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s0_t9_i_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s0_t9_i_188_st
+    nop
+    addiu t9, t9, -1
+va_sw_s0_t9_i_188_st:
+    jr    ra
+    sw    t9, 0x188(s0)
+
+va_sb_s0_t4_d_186:                                ; sb undo: t4 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sb_s0_t4_d_186_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sb_s0_t4_d_186_st
+    nop
+    addiu t4, t4, 1
+va_sb_s0_t4_d_186_st:
+    jr    ra
+    sb    t4, 0x186(s0)
+
+va_sw_s3_t2_d_188:                                ; sw undo: t2 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s3_t2_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s3_t2_d_188_st
+    nop
+    addiu t2, t2, 1
+va_sw_s3_t2_d_188_st:
+    jr    ra
+    sw    t2, 0x188(s3)
+
+va_sw_s3_t5_d_188:                                ; sw undo: t5 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s3_t5_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s3_t5_d_188_st
+    nop
+    addiu t5, t5, 1
+va_sw_s3_t5_d_188_st:
+    jr    ra
+    sw    t5, 0x188(s3)
+
+va_sw_s0_t7_i_188:                                ; sw undo: t7 -= 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s0_t7_i_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s0_t7_i_188_st
+    nop
+    addiu t7, t7, -1
+va_sw_s0_t7_i_188_st:
+    jr    ra
+    sw    t7, 0x188(s0)
+
+va_sh_s0_t1_i_18c:                                ; sh undo: t1 -= 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sh_s0_t1_i_18c_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sh_s0_t1_i_18c_st
+    nop
+    addiu t1, t1, -1
+va_sh_s0_t1_i_18c_st:
+    jr    ra
+    sh    t1, 0x18C(s0)
+
+va_sh_s0_t0_d_18c:                                ; sh undo: t0 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sh_s0_t0_d_18c_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sh_s0_t0_d_18c_st
+    nop
+    addiu t0, t0, 1
+va_sh_s0_t0_d_18c_st:
+    jr    ra
+    sh    t0, 0x18C(s0)
+
+va_sw_s0_t2_d_188:                                ; sw undo: t2 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s0_t2_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s0_t2_d_188_st
+    nop
+    addiu t2, t2, 1
+va_sw_s0_t2_d_188_st:
+    jr    ra
+    sw    t2, 0x188(s0)
+
+va_sh_s0_t7_i_18c:                                ; sh undo: t7 -= 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sh_s0_t7_i_18c_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sh_s0_t7_i_18c_st
+    nop
+    addiu t7, t7, -1
+va_sh_s0_t7_i_18c_st:
+    jr    ra
+    sh    t7, 0x18C(s0)
+
+va_sh_s0_t0_i_18c:                                ; sh undo: t0 -= 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sh_s0_t0_i_18c_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sh_s0_t0_i_18c_st
+    nop
+    addiu t0, t0, -1
+va_sh_s0_t0_i_18c_st:
+    jr    ra
+    sh    t0, 0x18C(s0)
+
+va_sh_s0_t2_i_18c:                                ; sh undo: t2 -= 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sh_s0_t2_i_18c_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sh_s0_t2_i_18c_st
+    nop
+    addiu t2, t2, -1
+va_sh_s0_t2_i_18c_st:
+    jr    ra
+    sh    t2, 0x18C(s0)
+
+va_sw_s0_t3_d_188:                                ; sw undo: t3 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s0_t3_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s0_t3_d_188_st
+    nop
+    addiu t3, t3, 1
+va_sw_s0_t3_d_188_st:
+    jr    ra
+    sw    t3, 0x188(s0)
+
+va_sw_s0_t1_i_188:                                ; sw undo: t1 -= 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s0_t1_i_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s0_t1_i_188_st
+    nop
+    addiu t1, t1, -1
+va_sw_s0_t1_i_188_st:
+    jr    ra
+    sw    t1, 0x188(s0)
+
+va_sw_s0_t4_d_188:                                ; sw undo: t4 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s0_t4_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s0_t4_d_188_st
+    nop
+    addiu t4, t4, 1
+va_sw_s0_t4_d_188_st:
+    jr    ra
+    sw    t4, 0x188(s0)
+
+va_sw_s0_t7_d_188:                                ; sw undo: t7 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_s0_t7_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_s0_t7_d_188_st
+    nop
+    addiu t7, t7, 1
+va_sw_s0_t7_d_188_st:
+    jr    ra
+    sw    t7, 0x188(s0)
+
+va_sw_a0_t7_d_188:                                ; sw undo: t7 += 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sw_a0_t7_d_188_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sw_a0_t7_d_188_st
+    nop
+    addiu t7, t7, 1
+va_sw_a0_t7_d_188_st:
+    jr    ra
+    sw    t7, 0x188(a0)
+
+va_sh_a2_t4_i_18c:                                ; sh undo: t4 -= 1
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, va_sh_a2_t4_i_18c_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, va_sh_a2_t4_i_18c_st
+    nop
+    addiu t4, t4, -1
+va_sh_a2_t4_i_18c_st:
+    jr    ra
+    sh    t4, 0x18C(a2)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +674,75 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 41 injections ----
+.headersize 0x80984CD0 - 0x00D22360            ; ovl_Boss_Va
+.org 0x80986270
+    jal   va_sw_s1_t4_d_188
+.org 0x80986450
+    jal   va_sw_s1_t7_d_188
+.org 0x80986484
+    jal   va_sw_s1_t6_d_188
+.org 0x809867D4
+    jal   va_sw_s1_t4_d_188
+.org 0x80986938
+    jal   va_sw_s1_t8_d_188
+.org 0x80986968
+    jal   va_sw_s1_t7_d_188
+.org 0x80986AB4
+    jal   va_sw_s1_t6_d_188
+.org 0x80986E6C
+    jal   va_sw_s1_t3_d_188
+.org 0x80986EDC
+    jal   va_sw_s1_t3_d_188
+.org 0x80986F10
+    jal   va_sw_s1_t9_d_188
+.org 0x809872D4
+    jal   va_sw_s0_t5_d_188
+.org 0x809885E8
+    jal   va_sh_s0_t1_d_18c
+.org 0x809887D0
+    jal   va_sw_s0_t5_d_188
+.org 0x809889A4
+    jal   va_sw_s0_t9_i_188
+.org 0x80988D5C
+    jal   va_sb_s0_t4_d_186
+.org 0x809893A0
+    jal   va_sw_s3_t2_d_188
+.org 0x80989540
+    jal   va_sw_s3_t5_d_188
+.org 0x80989A68
+    jal   va_sw_s0_t7_i_188
+.org 0x80989BCC
+    jal   va_sw_s0_t7_i_188
+.org 0x8098A2D8
+    jal   va_sh_s0_t1_i_18c
+.org 0x8098A334
+    jal   va_sh_s0_t0_d_18c
+.org 0x8098A354
+    jal   va_sw_s0_t2_d_188
+.org 0x8098B078
+    jal   va_sh_s0_t7_i_18c
+.org 0x8098B74C
+    jal   va_sh_s0_t0_i_18c
+.org 0x8098B874
+    jal   va_sh_s0_t1_d_18c
+.org 0x8098C070
+    jal   va_sh_s0_t2_i_18c
+.org 0x8098C458
+    jal   va_sw_s0_t3_d_188
+.org 0x8098C704
+    jal   va_sw_s0_t1_i_188
+.org 0x8098C72C
+    jal   va_sw_s0_t4_d_188
+.org 0x8098C7CC
+    jal   va_sw_s0_t9_i_188
+.org 0x8098D5BC
+    jal   va_sw_s0_t7_d_188
+.org 0x8098D6E0
+    jal   va_sw_a0_t7_d_188
+.org 0x8098D8F0
+    jal   va_sh_a2_t4_i_18c
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
