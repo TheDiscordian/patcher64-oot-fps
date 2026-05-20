@@ -276,6 +276,79 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 45: En_Fw (Flare Dancer) AI timers — tick-mod ----
+; Flare Dancer (Fire Temple miniboss). 5 timer fields control
+; damage-flash, explosion fx, slide-attack movement + SFX, and the
+; "return to body" timeout for when the head ragdolls.
+; Source uses ==0 / !=0 gates throughout. Tick-mod via Pattern E
+; for uniformity so attack/slide/explosion cadence matches 20 fps.
+
+fw_explo:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fw_explo_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fw_explo_st
+    nop
+    addiu t9, t9, 1
+fw_explo_st:
+    jr    ra
+    sh    t9, 0x1FA(s0)
+
+fw_damage:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fw_damage_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fw_damage_st
+    nop
+    addiu t6, t6, 1
+fw_damage_st:
+    jr    ra
+    sh    t6, 0x1F8(s0)
+
+fw_rtp:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fw_rtp_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fw_rtp_st
+    nop
+    addiu t7, t7, 1
+fw_rtp_st:
+    jr    ra
+    sh    t7, 0x202(s0)
+
+fw_slideSfx:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fw_slideSfx_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fw_slideSfx_st
+    nop
+    addiu t4, t4, 1
+fw_slideSfx_st:
+    jr    ra
+    sh    t4, 0x200(s0)
+
+fw_slide:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fw_slide_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fw_slide_st
+    nop
+    addiu t8, t8, 1
+fw_slide_st:
+    jr    ra
+    sh    t8, 0x1FE(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +411,19 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 45 injections ----
+.headersize 0x80977E80 - 0x00D15510            ; ovl_En_Fw
+.org 0x80978750
+    jal   fw_explo
+.org 0x80978820
+    jal   fw_damage
+.org 0x80978870
+    jal   fw_rtp
+.org 0x80978A18
+    jal   fw_slideSfx
+.org 0x80978ACC
+    jal   fw_slide
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
