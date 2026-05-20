@@ -276,6 +276,59 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 37: En_Po_Relay (Dampe's Ghost) timers — tick-mod ----
+; Dampe's Ghost (the race in Kakariko Graveyard). actionTimer and
+; bobTimer drive his motion. Value-keyed checks throughout source:
+;   bobTimer * 0x800 -> Math_SinS angle for up/down bob
+;   actionTimer * 0x800 -> shape.rot.y angle
+;   actionTimer < 8, < 5 -> death-anim phase gates
+;   actionTimer * 0x1000 - 0x4000 -> spawn-effect angle
+;   actionTimer * 10 + 80 -> effect alpha/color
+;   actionTimer == 1 -> SFX trigger
+;
+; Tick-mod via Pattern E preserves value sequence so Dampe's bob,
+; rotation, and death animation all wall-clock-correct on 30 fps.
+
+porelay_action_dec:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, porelay_action_dec_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, porelay_action_dec_store
+    nop
+    addiu t7, t7, 1                            ; phase 0 -> undo
+porelay_action_dec_store:
+    jr    ra
+    sh    t7, 0x186(s0)                       ; (delay slot) original sh
+
+porelay_action_inc:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, porelay_action_inc_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, porelay_action_inc_store
+    nop
+    addiu t7, t7, -1                            ; phase 0 -> undo
+porelay_action_inc_store:
+    jr    ra
+    sh    t7, 0x186(s0)                       ; (delay slot) original sh
+
+porelay_bob_dec:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, porelay_bob_dec_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, porelay_bob_dec_store
+    nop
+    addiu t8, t8, 1                            ; phase 0 -> undo
+porelay_bob_dec_store:
+    jr    ra
+    sb    t8, 0x185(s0)                       ; (delay slot) original sb
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +391,15 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 37 injections ----
+.headersize 0x80A7C040 - 0x00DFE980            ; ovl_En_Po_Relay
+.org 0x80A7C598                                ; was sh t7,0x186(s0) (--)
+    jal   porelay_action_dec
+.org 0x80A7CC3C                                ; was sh t7,0x186(s0) (++)
+    jal   porelay_action_inc
+.org 0x80A7D198                                ; was sb t8,0x185(s0) (--)
+    jal   porelay_bob_dec
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
