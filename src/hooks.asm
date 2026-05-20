@@ -276,6 +276,56 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 35: En_Insect AI timers — tick-mod ----
+; Bugs (the ones Link can dig up). actionTimer governs idle/walk/run
+; cycles; lifeTimer kills short-lived insects after expiry. Source has
+; value-keyed checks: actionTimer == 20, < 4, < 20, > 20, > 80,
+; actionTimer * 0.018f (CLAMP for skelAnime.playSpeed). Tick-mod via
+; Pattern E preserves the value sequence so chase/idle cadence and
+; animation playback speed are wall-clock-correct on 30 fps.
+; 3 sites: lifeTimer++ at 0x80a59070, actionTimer-- at 0x80a59148,
+; lifeTimer-- at 0x80a59158.
+
+insect_life_inc:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, insect_life_inc_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, insect_life_inc_store
+    nop
+    addiu t8, t8, -1                            ; phase 0 -> undo
+insect_life_inc_store:
+    jr    ra
+    sh    t8, 0x30C(s0)                       ; (delay slot) original sh
+
+insect_action_dec:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, insect_action_dec_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, insect_action_dec_store
+    nop
+    addiu t7, t7, 1                            ; phase 0 -> undo
+insect_action_dec_store:
+    jr    ra
+    sh    t7, 0x30A(s0)                       ; (delay slot) original sh
+
+insect_life_dec:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, insect_life_dec_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, insect_life_dec_store
+    nop
+    addiu t8, t8, 1                            ; phase 0 -> undo
+insect_life_dec_store:
+    jr    ra
+    sh    t8, 0x30C(s0)                       ; (delay slot) original sh
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +388,15 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 35 injections ----
+.headersize 0x80A57380 - 0x00DD9DC0            ; ovl_En_Insect
+.org 0x80A59070                                ; was sh t8,0x30C(s0) amt=+1
+    jal   insect_life_inc
+.org 0x80A59148                                ; was sh t7,0x30A(s0) amt=-1
+    jal   insect_action_dec
+.org 0x80A59158                                ; was sh t8,0x30C(s0) amt=-1
+    jal   insect_life_dec
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
