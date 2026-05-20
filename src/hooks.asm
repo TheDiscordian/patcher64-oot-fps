@@ -276,6 +276,155 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 73: 6 actors (16 sites) — final small NPC + Stinger variant sweep ----
+;   En_In (Ingo, ranch worker), En_Kz (King Zora), En_Okarina_Effect,
+;   En_Part (particles), En_Takara_Man (Treasure Box Shop owner),
+;   En_Weiyer (Stinger variant - water-Tektite)
+
+b73_in_t7_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b73_in_t7_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b73_in_t7_a2_d_st
+    nop
+    addiu t7, t7, 1
+b73_in_t7_a2_d_st:
+    jr    ra
+    sh    t7, 0x1DA(a2)
+
+b73_kz_t6_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b73_kz_t6_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b73_kz_t6_a2_d_st
+    nop
+    addiu t6, t6, 1
+b73_kz_t6_a2_d_st:
+    jr    ra
+    sh    t6, 0x1FC(a2)
+
+b73_oke_t4_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b73_oke_t4_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b73_oke_t4_a2_d_st
+    nop
+    addiu t4, t4, 1
+b73_oke_t4_a2_d_st:
+    jr    ra
+    sh    t4, 0x13C(a2)
+
+b73_part_t4_s1_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b73_part_t4_s1_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b73_part_t4_s1_d_st
+    nop
+    addiu t4, t4, 1
+b73_part_t4_s1_d_st:
+    jr    ra
+    sh    t4, 0x13E(s1)
+
+b73_part_t7_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b73_part_t7_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b73_part_t7_s0_d_st
+    nop
+    addiu t7, t7, 1
+b73_part_t7_s0_d_st:
+    jr    ra
+    sh    t7, 0x13E(s0)
+
+b73_part_t8_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b73_part_t8_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b73_part_t8_s0_d_st
+    nop
+    addiu t8, t8, 1
+b73_part_t8_s0_d_st:
+    jr    ra
+    sh    t8, 0x13E(s0)
+
+b73_tm_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b73_tm_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b73_tm_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+b73_tm_t6_s0_d_st:
+    jr    ra
+    sh    t6, 0x200(s0)
+
+b73_weiyer_t0_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b73_weiyer_t0_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b73_weiyer_t0_s0_d_st
+    nop
+    addiu t0, t0, 1
+b73_weiyer_t0_s0_d_st:
+    jr    ra
+    sh    t0, 0x184(s0)
+
+b73_weiyer_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b73_weiyer_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b73_weiyer_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+b73_weiyer_t6_s0_d_st:
+    jr    ra
+    sh    t6, 0x184(s0)
+
+b73_weiyer_t8_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b73_weiyer_t8_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b73_weiyer_t8_s0_d_st
+    nop
+    addiu t8, t8, 1
+b73_weiyer_t8_s0_d_st:
+    jr    ra
+    sh    t8, 0x184(s0)
+
+b73_weiyer_t8_a3_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, b73_weiyer_t8_a3_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, b73_weiyer_t8_a3_d_st
+    nop
+    addiu t8, t8, 1
+b73_weiyer_t8_a3_d_st:
+    jr    ra
+    sh    t8, 0x184(a3)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +487,46 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 73 injections ----
+.headersize 0x809C05A0 - 0x00D50720            ; ovl_En_In
+.org 0x809C1048
+    jal   b73_in_t7_a2_d
+.headersize 0x80AD5D60 - 0x00E55BA0            ; ovl_En_Kz
+.org 0x80AD60E0
+    jal   b73_kz_t6_a2_d
+.headersize 0x80AECA40 - 0x00E6BD20            ; ovl_En_Okarina_Effect
+.org 0x80AECC48
+    jal   b73_oke_t4_a2_d
+.headersize 0x80865520 - 0x00C02E00            ; ovl_En_Part
+.org 0x80865CE0
+    jal   b73_part_t4_s1_d
+.org 0x80865D4C
+    jal   b73_part_t7_s0_d
+.org 0x80866100
+    jal   b73_part_t7_s0_d
+.org 0x80866114
+    jal   b73_part_t8_s0_d
+.headersize 0x80B18FC0 - 0x00E946F0            ; ovl_En_Takara_Man
+.org 0x80B195E0
+    jal   b73_tm_t6_s0_d
+.headersize 0x80B3AA10 - 0x00EB6140            ; ovl_En_Weiyer
+.org 0x80B3B1B0
+    jal   b73_weiyer_t0_s0_d
+.org 0x80B3B534
+    jal   b73_weiyer_t6_s0_d
+.org 0x80B3B60C
+    jal   b73_weiyer_t8_s0_d
+.org 0x80B3B8C4
+    jal   b73_weiyer_t6_s0_d
+.org 0x80B3B9A0
+    jal   b73_weiyer_t6_s0_d
+.org 0x80B3BAA4
+    jal   b73_weiyer_t8_a3_d
+.org 0x80B3BB84
+    jal   b73_weiyer_t6_s0_d
+.org 0x80B3BD4C
+    jal   b73_weiyer_t6_s0_d
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
