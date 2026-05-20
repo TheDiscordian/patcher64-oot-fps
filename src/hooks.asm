@@ -274,17 +274,26 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
-; ---- Bucket 11: scale Armos (En_Am) AI timer seeds by 1.5 in 30 fps ----
+; ---- Bucket 11: Armos (En_Am) AI timers — mixed seed-mod + tick-mod ----
 ; Same family — raw `timer--` on s16 fields. Struct shifted -0x10 vs header:
-;   header 0x25A cooldownTimer -> 0x24A
-;   header 0x25C attackTimer   -> 0x24C
-;   header 0x25E iceTimer      -> 0x24E
-;   header 0x260 deathTimer    -> 0x250
-; cooldownTimer has two seeds: 40 (SetupCooldown) and 5 (SetupRicochet — the
-; brief stagger after ricochet damage). Both patched. The Ricochet `li t8,5`
-; sits in `beqz v0` delay slot, so we patch its `sh t8,586(a0)` store instead.
-; attackTimer's `li t5,200` similarly sits in `bnez at` delay slot; patch the
-; `sh t5,588(s0)` store.
+;   header 0x25A cooldownTimer -> 0x24A   (seed-mod)
+;   header 0x25C attackTimer   -> 0x24C   (seed-mod)
+;   header 0x25E iceTimer      -> 0x24E   (TICK-MOD — has `% 4` and `>> 2` uses)
+;   header 0x260 deathTimer    -> 0x250   (TICK-MOD — has `< 52` and `% 4` uses)
+;
+; seed-mod ok when the source only checks `== 0` / `!= 0`. Use tick-mod when
+; the source has intermediate threshold or modular comparisons on the field —
+; scaling the seed shifts the value-distribution and breaks those checks. The
+; first attempt seed-modded deathTimer 64->96 and iceTimer 48->72, which user
+; play-test caught: Armos spun then hopped once before exploding (the death
+; sequence has `if (deathTimer < 52)` at z_en_am.c:619 gating the multi-hop
+; lunge body, plus `(deathTimer % 4)==0` at line 899 — both compare against
+; the value, so the value has to stay in its original range).
+;
+; cooldownTimer seeds (40 + 5) and attackTimer seed (200) are all gated on
+; `== 0` only, so seed-mod is fine for those. cooldownTimer=5 (SetupRicochet)
+; and attackTimer=200 (Sleep) both have their `li` in a branch delay slot, so
+; we patch the corresponding `sh` store instead.
 
 armos_cooldown_seed:                           ; replaces li t7,40 at 0x808F973C
     lui   t0, 0x8042
@@ -306,34 +315,50 @@ aas_store:
     jr    ra
     sh    t5, 0x24C(s0)                        ; (delay slot) original store
 
-; The death + ice sites both have the pattern  `li REG,N` / `sh REG,X(s0)` —
-; replacing the `li` with a jal puts the `sh` in the jal's delay slot, which
-; runs BEFORE the hook with STALE REG. That stored garbage to deathTimer /
-; iceTimer (user-observed: "lunge broken — shakes but doesn't move toward me"
-; from corrupt deathTimer making EnAm_Lunge go into panicSpin path, and
-; "explodes without spinning first" from the same field). Fix: hook does its
-; OWN authoritative store in jr ra's delay slot — that overwrites the stale
-; one the original delay slot inflicted.
-
-armos_death_seed:                              ; replaces li t6,64 at 0x808FA0E4
-    lui   t0, 0x8042
-    lbu   t0, -0x67CE(t0)                      ; fps_switch
-    beqz  t0, ads_done                         ; 20 fps -> rewrite with 64
-    li    t6, 64                               ; (delay slot) 20 fps value
-    li    t6, 96                               ; 30 fps -> 64 * 1.5
-ads_done:
-    jr    ra
-    sh    t6, 0x250(s0)                        ; (delay slot) authoritative store
-
-armos_ice_seed:                                ; replaces li t0,48 at 0x808FA774
-    lui   t2, 0x8042                           ; t2 scratch (t0 IS the seed)
+; deathTimer tick-mod: replaces `sh t0,592(s2)` at 0x808FABE4 in EnAm_Update.
+; Original sequence:
+;   lh   v0, 592(s2)   ; load
+;   beqz v0, +N        ; if zero, skip
+;   addiu t0, v0, -1   ; (delay slot) decrement
+;   sh   t0, 592(s2)   ; <-- patched: jal armos_death_tick
+;   lh   v0, 592(s2)   ; (delay slot of our jal) reloads OLD memory value
+;   ...uses v0 in `bnez v0, ...` further down
+; Hook stores authoritative value AND reloads v0 in jr ra's delay slot, so
+; v0 sees the post-store value (matches original semantics).
+armos_death_tick:                              ; replaces sh t0,592(s2) at 0x808FABE4
+    lui   t2, 0x8042                           ; t2 scratch (t0 is the value)
     lbu   t2, -0x67CE(t2)                      ; fps_switch
-    beqz  t2, ais_done                         ; 20 fps -> rewrite with 48
-    li    t0, 48                               ; (delay slot) 20 fps value
-    li    t0, 72                               ; 30 fps -> 48 * 1.5
-ais_done:
+    beqz  t2, adt_store                        ; 20 fps -> always decrement
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; global frame phase
+    bnez  t2, adt_store                        ; phase 1/2 -> decrement
+    nop
+    addiu t0, t0, 1                            ; phase 0 -> undo decrement
+adt_store:
+    sh    t0, 0x250(s2)                        ; authoritative store
     jr    ra
-    sh    t0, 0x24E(s0)                        ; (delay slot) authoritative store
+    lh    v0, 0x250(s2)                        ; (delay slot) reload v0 (downstream `bnez v0` needs it)
+
+; iceTimer tick-mod: replaces `sh t7,590(s0)` at 0x808FAFD4 in EnAm_Draw.
+; Similar structure — iceTimer is decremented in Draw, then `iceTimer % 4`
+; and `iceTimer >> 2` drive an ice-particle spawn pattern (cosmetic).
+armos_ice_tick:                                ; replaces sh t7,590(s0) at 0x808FAFD4
+    lui   t2, 0x8042                           ; t2 scratch (t7 is the value)
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, ait_store                        ; 20 fps -> always decrement
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; global frame phase
+    bnez  t2, ait_store                        ; phase 1/2 -> decrement
+    nop
+    addiu t7, t7, 1                            ; phase 0 -> undo decrement
+ait_store:
+    jr    ra
+    sh    t7, 0x24E(s0)                        ; (delay slot) authoritative store
+                                                ; (no v0 reload needed — the
+                                                ; original delay-slot `lh t0`
+                                                ; further down reads memory
+                                                ; AFTER our store, so it picks
+                                                ; up the correct value)
 
 armos_ricochet_seed:                           ; replaces sh t8,586(a0) at 0x808F99EC
     lui   t0, 0x8042
@@ -414,12 +439,12 @@ ars_store:
     jal   armos_cooldown_seed
 .org 0x808F9AC8                                ; was `sh t5,588(s0)` in EnAm_Sleep (attackTimer=200)
     jal   armos_attack_seed
-.org 0x808FA0E4                                ; was `li t6,64` (deathTimer=64)
-    jal   armos_death_seed
-.org 0x808FA774                                ; was `li t0,48` (iceTimer=48)
-    jal   armos_ice_seed
 .org 0x808F99EC                                ; was `sh t8,586(a0)` (cooldownTimer=5 in SetupRicochet)
     jal   armos_ricochet_seed
+.org 0x808FABE4                                ; was `sh t0,592(s2)` (deathTimer-- in EnAm_Update)
+    jal   armos_death_tick
+.org 0x808FAFD4                                ; was `sh t7,590(s0)` (iceTimer-- in EnAm_Draw)
+    jal   armos_ice_tick
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
