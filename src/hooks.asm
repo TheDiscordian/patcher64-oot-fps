@@ -482,6 +482,83 @@ am_cd_done:
     jr    ra
     or    $a0, $s0, $zero                      ; (delay slot) original move $a0, $s0
 
+; ---- Boss_Goma intro pacing fix (frameCount tick-mod) ----
+; User-reported: Gohma's boss-intro cutscene plays "almost twice as fast" at
+; 30 fps stock. Trace: BossGoma_Update (z_boss_goma.c:1930, RAM 0x808ABCF8)
+; increments this->frameCount (s16 @ struct 0x184, header 0x194 - shift -0x10)
+; once per Update. The intro state machine (action state 2) keys cadence off
+; `frameCount == 176` (Door_Shutter spawn + lighting change), `== 190` (player
+; cs-action), `>= 228` (camera return + Cutscene_StopManual). At 30 fps stock
+; those fire 1.5x sooner. (Gohma uses Cutscene_StartManual + actor-local
+; frameCount, not the scripted-cutscene path covered by PR #77.)
+;
+; Fix: tick-mod the frameCount++ via frame_phase. Same family as Bucket 7 /
+; PR #77 cutscene curFrame.
+;
+; Injection point: the C `this->frameCount++;` compiles to
+;   0x808ABD0C: lh    r15, 0x184(s0)        ; r15 = frameCount
+;   0x808ABD18: addiu r24, r15, 1           ; r24 = r15 + 1
+;   ...
+;   0x808ABD24: sh    r24, 0x184(s0)        ; (delay slot of beq above) frameCount = r24
+; We hook the addiu at 0x808ABD18 (jal -> hook). Delay slot 0x808ABD1C is
+; `sh r14, 0x1A8(s0)` - safe, independent store. Hook conditionally computes
+; r24 = r15+1 (normal/20fps/phase!=0) or r24 = r15 (30fps phase 0, tick skip).
+; The downstream `sh r24, 0x184(s0)` at 0x808ABD24 (delay slot of the beq at
+; 0x808ABD20) then writes the right value to frameCount.
+en_goma_framecount_tick:
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, gft_inc                          ; 20 fps -> always increment
+    nop
+    lui   t0, 0x801C
+    lbu   t0, 0x6FB4(t0)                       ; frame_phase
+    beqz  t0, gft_skip                         ; phase 0 -> skip increment
+    nop
+gft_inc:
+    jr    ra
+    addiu t8, t7, 1                            ; (delay slot) r24 = r15 + 1  (t7=r15, t8=r24)
+gft_skip:
+    jr    ra
+    or    t8, t7, zero                         ; (delay slot) r24 = r15 (no inc)
+
+; ---- Boss_Goma intro camera-lerp scaler wrapper ----
+; Math_ApproachF(f32* p, f32 target, f32 fraction, f32 step) has no
+; R_UPDATE_RATE scaling, so at 30 fps the camera lerps in case 2 of
+; BossGoma_Encounter (z_boss_goma.c:754-806) get called 1.5x more often per
+; second and the sub-camera pan moves visibly faster.
+;
+; v1 of this fix skipped the call 1 in 3 frames - caused visible stutter
+; ("20 fps feel") because the screen still renders at 30 fps and the camera
+; held still 1 in 3 frames. Wrong approach.
+;
+; This version scales `fraction` (a2/$r6) and `step` (a3/$r7) by 2/3 at 30 fps
+; - the camera still moves every frame (no stutter), just advances 2/3 as far
+; per call. Net wall-clock motion matches 20 fps: 30 calls/sec * 2/3 advance =
+; 20-fps-equivalent per-second motion.
+;
+; O32 ABI passes Math_ApproachF's float args (target/fraction/step) as int
+; bits in r5/r6/r7 - the callee mtc1's them inside. So we can mtc1 a2 and a3
+; to FP regs, multiply by 0.6666667f, and mfc1 back to int regs before
+; tail-jumping to Math_ApproachF. 20 fps path: bypass the scaling.
+goma_intro_lerp_scale:
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, gils_call                        ; 20 fps -> direct call
+    nop
+    lui   t0, 0x3F2A
+    ori   t0, t0, 0xAAAB                       ; t0 = bits of 0.6666667f
+    mtc1  t0, f4                               ; f4 = 0.6666667f
+    mtc1  a2, f0                               ; f0 = fraction (int bits -> float)
+    mtc1  a3, f2                               ; f2 = step
+    nop
+    mul.s f0, f0, f4                           ; fraction *= 2/3
+    mul.s f2, f2, f4                           ; step *= 2/3
+    mfc1  a2, f0                               ; a2 = scaled fraction
+    mfc1  a3, f2                               ; a3 = scaled step
+gils_call:
+    j     0x80064280                           ; tail-call Math_ApproachF (preserves ra)
+    nop
+
 
 ; ---- Debug-save playerName init wrapper ----
 ; Retail NTSC 1.0's Sram_InitDebugSave assigns the Japanese-encoded name
@@ -610,6 +687,25 @@ sram_init_w_name:
     jal   goma_patience_1_seed
 .org 0x808AAA98                                ; was `li t7,200` (patienceTimer=200 site 2)
     jal   goma_patience_2_seed
+
+; Boss_Goma intro pacing — BossGoma_Update frameCount++ tick-mod
+.org 0x808ABD18                                ; was `addiu r24, r15, 1` (frameCount + 1)
+    jal   en_goma_framecount_tick
+
+; Boss_Goma intro pacing — case-2 camera-lerp scaler (5 sites in BossGoma_Encounter)
+; Each redirect routes through goma_intro_lerp_scale which multiplies fraction
+; and step by 2/3 at 30 fps then tail-jumps to Math_ApproachF. Smooth camera
+; motion at every frame (no stutter), 2/3 wall-clock advance rate matches 20 fps.
+.org 0x808A88D8                                ; subCamEye.x lerp
+    jal   goma_intro_lerp_scale
+.org 0x808A8918                                ; subCamEye.y lerp
+    jal   goma_intro_lerp_scale
+.org 0x808A8958                                ; subCamEye.z lerp
+    jal   goma_intro_lerp_scale
+.org 0x808A8974                                ; subCamFollowSpeed lerp
+    jal   goma_intro_lerp_scale
+.org 0x808A89C0                                ; subCamAt.y lerp (conditional)
+    jal   goma_intro_lerp_scale
 
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
