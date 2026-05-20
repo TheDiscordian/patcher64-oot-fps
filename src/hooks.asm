@@ -276,6 +276,72 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 23: Floormaster (En_Floormas) actionTimer + smallActionTimer ----
+; Forest Temple + Bottom of Well hand-trap enemy. Many fixed seeds plus
+; value-keyed checks like `actionTimer == 1` (line 935). Pattern E tick-mod
+; across all decrement sites.
+;
+; actionTimer at struct offset 0x184 (header /* 0x194 */), s16.
+; smallActionTimer at 0x18A (header /* 0x19A */), s16.
+; 4 actionTimer decrements (s0/t6 ×3, s0/t2 ×1, a2/t6 ×1)
+; 2 smallActionTimer decrements (s0/t6 ×2)
+
+floormas_action_s0_t6:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, fas0t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, fas0t6_store
+    nop
+    addiu t6, t6, 1
+fas0t6_store:
+    sh    t6, 0x184(s0)
+    jr    ra
+    lh    v0, 0x184(s0)
+
+floormas_action_s0_t2:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, fas0t2_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, fas0t2_store
+    nop
+    addiu t2, t2, 1
+fas0t2_store:
+    sh    t2, 0x184(s0)
+    jr    ra
+    lh    v0, 0x184(s0)
+
+floormas_action_a2_t6:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, faa2t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, faa2t6_store
+    nop
+    addiu t6, t6, 1
+faa2t6_store:
+    sh    t6, 0x184(a2)
+    jr    ra
+    lh    v0, 0x184(a2)
+
+floormas_small_s0_t6:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, fss0t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, fss0t6_store
+    nop
+    addiu t6, t6, 1
+fss0t6_store:
+    sh    t6, 0x18A(s0)
+    jr    ra
+    lh    v0, 0x18A(s0)
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +404,21 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 23 — ovl_En_Floormas (Floormaster) actionTimer + smallActionTimer
+.headersize 0x809351A0 - 0x00CD28C0
+.org 0x80936344                                ; sh t6,388(s0)
+    jal   floormas_action_s0_t6
+.org 0x80936950                                ; sh t6,388(s0)
+    jal   floormas_action_s0_t6
+.org 0x80936B54                                ; sh t2,388(s0)
+    jal   floormas_action_s0_t2
+.org 0x80937994                                ; sh t6,388(a2)
+    jal   floormas_action_a2_t6
+.org 0x80936CC0                                ; sh t6,394(s0) (smallActionTimer)
+    jal   floormas_small_s0_t6
+.org 0x809375CC                                ; sh t6,394(s0) (smallActionTimer)
+    jal   floormas_small_s0_t6
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
