@@ -276,6 +276,80 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 20: Deku Baba (En_Dekubaba) timer tick-mod ----
+; Deku Baba's `timer` field (s16 @ struct offset 0x1B6; header /* 0x1C6 */)
+; gates a large state machine with many intermediate threshold checks at
+; specific VALUES (z_en_dekubaba.c:782 == 11, :792 == 18, :801 == 25, :810
+; == 26, :832 == 10, :437 == 1, :784 == 11, :792 == 18, :1112 == 2). Seed-
+; mod would shift the value distribution and break all those checks. Use
+; tick-mod (skip 1/3 of decrements at 30 fps via frame_phase) — value stays
+; in its original range and every threshold fires at the right wall-clock
+; moment.
+;
+; 7 decrement sites across the file, in 4 (base register, decrement
+; register) combinations. Each hook stores authoritative value and reloads
+; v0 in jr ra's delay slot (downstream value-keyed branches use v0).
+;   s0/t6: 0x808FC6E4, 0x808FD070
+;   s0/t8: 0x808FC288, 0x808FCC10
+;   a0/t6: 0x808FC1D0, 0x808FDDAC
+;   a1/t6: 0x808FD6DC
+
+deku_tick_s0_t6:                               ; (s0, t6)
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, dts0t6_store
+    lui   t2, 0x801C
+    lbu   t2, 0x6FB4(t2)                       ; frame_phase
+    bnez  t2, dts0t6_store
+    nop
+    addiu t6, t6, 1
+dts0t6_store:
+    sh    t6, 0x1B6(s0)
+    jr    ra
+    lh    v0, 0x1B6(s0)
+
+deku_tick_s0_t8:                               ; (s0, t8)
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)
+    beqz  t2, dts0t8_store
+    lui   t2, 0x801C
+    lbu   t2, 0x6FB4(t2)
+    bnez  t2, dts0t8_store
+    nop
+    addiu t8, t8, 1
+dts0t8_store:
+    sh    t8, 0x1B6(s0)
+    jr    ra
+    lh    v0, 0x1B6(s0)
+
+deku_tick_a0_t6:                               ; (a0, t6)
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)
+    beqz  t2, dta0t6_store
+    lui   t2, 0x801C
+    lbu   t2, 0x6FB4(t2)
+    bnez  t2, dta0t6_store
+    nop
+    addiu t6, t6, 1
+dta0t6_store:
+    sh    t6, 0x1B6(a0)
+    jr    ra
+    lh    v0, 0x1B6(a0)
+
+deku_tick_a1_t6:                               ; (a1, t6)
+    lui   t2, 0x8042
+    lbu   t2, -0x67CE(t2)
+    beqz  t2, dta1t6_store
+    lui   t2, 0x801C
+    lbu   t2, 0x6FB4(t2)
+    bnez  t2, dta1t6_store
+    nop
+    addiu t6, t6, 1
+dta1t6_store:
+    sh    t6, 0x1B6(a1)
+    jr    ra
+    lh    v0, 0x1B6(a1)
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +412,23 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 20 — ovl_En_Dekubaba (Deku Baba) timer tick-mod (7 sites)
+.headersize 0x808FB480 - 0x00C98C40
+.org 0x808FC1D0                                ; sh t6,438(a0)
+    jal   deku_tick_a0_t6
+.org 0x808FC288                                ; sh t8,438(s0)
+    jal   deku_tick_s0_t8
+.org 0x808FC6E4                                ; sh t6,438(s0)
+    jal   deku_tick_s0_t6
+.org 0x808FCC10                                ; sh t8,438(s0)
+    jal   deku_tick_s0_t8
+.org 0x808FD070                                ; sh t6,438(s0)
+    jal   deku_tick_s0_t6
+.org 0x808FD6DC                                ; sh t6,438(a1)
+    jal   deku_tick_a1_t6
+.org 0x808FDDAC                                ; sh t6,438(a0)
+    jal   deku_tick_a0_t6
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
