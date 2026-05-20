@@ -21,7 +21,9 @@
 ;   ovl_player      RAM 0x808301C0  ->  ROM 0x00BCDB70
 
 .n64
-.open "/home/discordian/Programming/patcher64-oot-fps/work/oot-redux-decompressed.z64","/home/discordian/Programming/patcher64-oot-fps/work/oot-redux-30fps.z64",0
+; Paths are relative to the working directory armips is invoked from — run
+; `tools/armips-src/build/armips src/hooks.asm` from the repo root.
+.open "work/oot-redux-decompressed.z64","work/oot-redux-30fps.z64",0
 
 ;================================================================
 ; Hook bodies — free space inside the Redux payload (RAM 0x8041AE00)

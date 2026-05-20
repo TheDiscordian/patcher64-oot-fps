@@ -8,7 +8,9 @@
 ; It deliberately omits the Bucket 1/2/3 hooks.
 
 .n64
-.open "/home/discordian/Programming/patcher64-oot-fps/work/oot-redux-decompressed.z64","/home/discordian/Programming/patcher64-oot-fps/work/oot-redux-30fps-stock.z64",0
+; Paths are relative to the working directory armips is invoked from — run
+; `tools/armips-src/build/armips src/control.asm` from the repo root.
+.open "work/oot-redux-decompressed.z64","work/oot-redux-30fps-stock.z64",0
 
 ; --- 30 FPS on by default (payload) ---
 .headersize 0x80400000 - 0x03680000
