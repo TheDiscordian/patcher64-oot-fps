@@ -276,6 +276,82 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 27: Blue Bubble (En_Bb) timer tick-mod ----
+; Common dungeon bubble enemy. Random Rand_ZeroOne()-multiplied seeds at
+; z_en_bb.c:556, 603, 608, 616 — rules out seed-mod. Pattern E tick-mod.
+; struct.timer is s32 at struct offset 0x250 (header /* 0x260 */).
+; 6 decrement sites, all base s0, 5 register variants.
+
+bb_s0_t4:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, bbs0t4_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, bbs0t4_store
+    nop
+    addiu t4, t4, 1
+bbs0t4_store:
+    sw    t4, 0x250(s0)
+    jr    ra
+    lw    v0, 0x250(s0)
+
+bb_s0_t5:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, bbs0t5_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, bbs0t5_store
+    nop
+    addiu t5, t5, 1
+bbs0t5_store:
+    sw    t5, 0x250(s0)
+    jr    ra
+    lw    v0, 0x250(s0)
+
+bb_s0_t6:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, bbs0t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, bbs0t6_store
+    nop
+    addiu t6, t6, 1
+bbs0t6_store:
+    sw    t6, 0x250(s0)
+    jr    ra
+    lw    v0, 0x250(s0)
+
+bb_s0_t7:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, bbs0t7_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, bbs0t7_store
+    nop
+    addiu t7, t7, 1
+bbs0t7_store:
+    sw    t7, 0x250(s0)
+    jr    ra
+    lw    v0, 0x250(s0)
+
+bb_s0_t8:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, bbs0t8_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, bbs0t8_store
+    nop
+    addiu t8, t8, 1
+bbs0t8_store:
+    sw    t8, 0x250(s0)
+    jr    ra
+    lw    v0, 0x250(s0)
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +414,21 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 27 — ovl_En_Bb (Blue Bubble) timer tick-mod (6 sites)
+.headersize 0x80913EA0 - 0x00CB1620
+.org 0x80914698                                ; sw t4,592(s0)
+    jal   bb_s0_t4
+.org 0x8091481C                                ; sw t6,592(s0)
+    jal   bb_s0_t6
+.org 0x80914C8C                                ; sw t8,592(s0)
+    jal   bb_s0_t8
+.org 0x80915768                                ; sw t8,592(s0)
+    jal   bb_s0_t8
+.org 0x80915E6C                                ; sw t7,592(s0)
+    jal   bb_s0_t7
+.org 0x80916744                                ; sw t5,592(s0)
+    jal   bb_s0_t5
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
