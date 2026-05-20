@@ -276,6 +276,38 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+
+; ---- Bucket 55: En_Skj missing `timer` field — tick-mod ----
+; B48 covered multiuseTimer, needleShootTimer, dodgeResetTimer but missed
+; the additional `timer` field at struct 0x2B6 (header 0x2C6). This adds
+; two ++ sites for it.
+
+skj_timer_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, skj_timer_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, skj_timer_s0_t7_st
+    nop
+    addiu t7, t7, -1
+skj_timer_s0_t7_st:
+    jr    ra
+    sh    t7, 0x2B6(s0)
+
+skj_timer_a0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, skj_timer_a0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, skj_timer_a0_t7_st
+    nop
+    addiu t7, t7, -1
+skj_timer_a0_t7_st:
+    jr    ra
+    sh    t7, 0x2B6(a0)
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +370,14 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+
+; ---- Bucket 55 injections ----
+.headersize 0x80A6CA90 - 0x00DEF3E0            ; ovl_En_Skj
+.org 0x80A6EF50
+    jal   skj_timer_s0_t7
+.org 0x80A6F9C4
+    jal   skj_timer_a0_t7
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
