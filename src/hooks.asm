@@ -521,37 +521,6 @@ gft_skip:
     jr    ra
     or    t8, t7, zero                         ; (delay slot) r24 = r15 (no inc)
 
-; ---- Boss_Goma intro camera-lerp tick-mod wrapper ----
-; The intro (BossGoma_Encounter case 2, z_boss_goma.c:754-806) smooth-pans the
-; sub-camera with 5 Math_ApproachF lerps per frame:
-;   subCamEye.x, subCamEye.y, subCamEye.z, subCamFollowSpeed, subCamAt.y.
-; Math_ApproachF has no R_UPDATE_RATE scaling, so at 30 fps it's called 1.5x
-; per second and the camera pan visibly moves 1.5x too fast. Same family as
-; the frameCount fix above.
-;
-; This wrapper sits in front of Math_ApproachF: skip the call 1 in 3 frames
-; at 30 fps (phase 0), otherwise tail-jump to Math_ApproachF. `j` not `jal`
-; for the tail jump preserves ra so Math_ApproachF returns directly to the
-; caller in BossGoma_Encounter.
-;
-; ONLY redirected at the 5 case-2 Math_ApproachF sites - other Math_ApproachF
-; calls in this and other functions are untouched, so unrelated game state
-; (Gohma's positioning, NPC behavior elsewhere) is unaffected.
-goma_intro_lerp_tick:
-    lui   t0, 0x8042
-    lbu   t0, -0x67CE(t0)                      ; fps_switch
-    beqz  t0, gilt_call                        ; 20 fps -> call Math_ApproachF
-    nop
-    lui   t0, 0x801C
-    lbu   t0, 0x6FB4(t0)                       ; frame_phase
-    bnez  t0, gilt_call                        ; phase 1/2 -> call Math_ApproachF
-    nop
-    jr    ra                                   ; phase 0 -> skip
-    nop
-gilt_call:
-    j     0x80064280                           ; tail-jump to Math_ApproachF (preserves ra)
-    nop
-
 
 ; ---- Debug-save playerName init wrapper ----
 ; Retail NTSC 1.0's Sram_InitDebugSave assigns the Japanese-encoded name
@@ -684,18 +653,6 @@ sram_init_w_name:
 ; Boss_Goma intro pacing — BossGoma_Update frameCount++ tick-mod
 .org 0x808ABD18                                ; was `addiu r24, r15, 1` (frameCount + 1)
     jal   en_goma_framecount_tick
-
-; Boss_Goma intro pacing — case-2 camera-lerp tick-mod (5 sites in BossGoma_Encounter)
-.org 0x808A88D8                                ; subCamEye.x lerp
-    jal   goma_intro_lerp_tick
-.org 0x808A8918                                ; subCamEye.y lerp
-    jal   goma_intro_lerp_tick
-.org 0x808A8958                                ; subCamEye.z lerp
-    jal   goma_intro_lerp_tick
-.org 0x808A8974                                ; subCamFollowSpeed lerp
-    jal   goma_intro_lerp_tick
-.org 0x808A89C0                                ; subCamAt.y lerp (conditional)
-    jal   goma_intro_lerp_tick
 
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
