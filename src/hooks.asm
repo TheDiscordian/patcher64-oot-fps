@@ -276,6 +276,212 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 70: 8 common enemies — tick-mod ----
+;   En_Okuta (Octorok): timer x5 sites
+;   En_Poh (Poe, normal): visibilityTimer (dec + inc)
+;   En_Po_Desert (Desert Poe): actionTimer x2
+;   En_Ik (Iron Knuckle / Nabooru-Knuckle): animationTimer x2
+;   En_Kusa (cuttable grass clump): timer
+;   En_Hintnuts (Mad Scrub): animFlagAndTimer x5
+;   En_Shopnuts (Business Scrub): animFlagAndTimer x3
+;   En_Nutsball (Deku-spit projectile): timer
+
+cm_okuta_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_okuta_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_okuta_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+cm_okuta_t6_s0_d_st:
+    jr    ra
+    sh    t6, 0x184(s0)
+
+cm_okuta_t7_s5_i:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_okuta_t7_s5_i_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_okuta_t7_s5_i_st
+    nop
+    addiu t7, t7, -1
+cm_okuta_t7_s5_i_st:
+    jr    ra
+    sh    t7, 0x184(s5)
+
+cm_okuta_t8_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_okuta_t8_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_okuta_t8_s0_d_st
+    nop
+    addiu t8, t8, 1
+cm_okuta_t8_s0_d_st:
+    jr    ra
+    sh    t8, 0x184(s0)
+
+cm_poh_t0_a0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_poh_t0_a0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_poh_t0_a0_d_st
+    nop
+    addiu t0, t0, 1
+cm_poh_t0_a0_d_st:
+    jr    ra
+    sh    t0, 0x18A(a0)
+
+cm_poh_t0_a0_i:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_poh_t0_a0_i_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_poh_t0_a0_i_st
+    nop
+    addiu t0, t0, -1
+cm_poh_t0_a0_i_st:
+    jr    ra
+    sh    t0, 0x18A(a0)
+
+cm_po_des_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_po_des_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_po_des_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+cm_po_des_t6_s0_d_st:
+    jr    ra
+    sh    t6, 0x184(s0)
+
+cm_po_des_t6_a0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_po_des_t6_a0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_po_des_t6_a0_d_st
+    nop
+    addiu t6, t6, 1
+cm_po_des_t6_a0_d_st:
+    jr    ra
+    sh    t6, 0x184(a0)
+
+cm_ik_t7_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_ik_t7_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_ik_t7_s0_d_st
+    nop
+    addiu t7, t7, 1
+cm_ik_t7_s0_d_st:
+    jr    ra
+    sb    t7, 0x2E9(s0)
+
+cm_ik_t2_s1_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_ik_t2_s1_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_ik_t2_s1_d_st
+    nop
+    addiu t2, t2, 1
+cm_ik_t2_s1_d_st:
+    jr    ra
+    sb    t2, 0x2E9(s1)
+
+cm_kusa_t7_a0_i:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_kusa_t7_a0_i_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_kusa_t7_a0_i_st
+    nop
+    addiu t7, t7, -1
+cm_kusa_t7_a0_i_st:
+    jr    ra
+    sh    t7, 0x18C(a0)
+
+cm_hintnuts_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_hintnuts_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_hintnuts_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+cm_hintnuts_t6_s0_d_st:
+    jr    ra
+    sh    t6, 0x184(s0)
+
+cm_hintnuts_t6_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_hintnuts_t6_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_hintnuts_t6_a2_d_st
+    nop
+    addiu t6, t6, 1
+cm_hintnuts_t6_a2_d_st:
+    jr    ra
+    sh    t6, 0x184(a2)
+
+cm_shopnuts_t6_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_shopnuts_t6_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_shopnuts_t6_s0_d_st
+    nop
+    addiu t6, t6, 1
+cm_shopnuts_t6_s0_d_st:
+    jr    ra
+    sh    t6, 0x184(s0)
+
+cm_shopnuts_t6_a2_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_shopnuts_t6_a2_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_shopnuts_t6_a2_d_st
+    nop
+    addiu t6, t6, 1
+cm_shopnuts_t6_a2_d_st:
+    jr    ra
+    sh    t6, 0x184(a2)
+
+cm_nutsball_t8_s0_d:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, cm_nutsball_t8_s0_d_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, cm_nutsball_t8_s0_d_st
+    nop
+    addiu t8, t8, 1
+cm_nutsball_t8_s0_d_st:
+    jr    ra
+    sh    t8, 0x142(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -339,6 +545,57 @@ sgs_store:
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
 
+; ---- Bucket 70 injections ----
+.headersize 0x8086E420 - 0x00C0BCF0            ; ovl_En_Okuta
+.org 0x8086EFC4
+    jal   cm_okuta_t6_s0_d
+.org 0x8086F0F8
+    jal   cm_okuta_t6_s0_d
+.org 0x8086F2D0
+    jal   cm_okuta_t7_s5_i
+.org 0x8086F5B4
+    jal   cm_okuta_t6_s0_d
+.org 0x8086F738
+    jal   cm_okuta_t8_s0_d
+.headersize 0x8086A290 - 0x00C07B60            ; ovl_En_Poh
+.org 0x8086C998
+    jal   cm_poh_t0_a0_d
+.org 0x8086DAEC
+    jal   cm_poh_t0_a0_i
+.headersize 0x80B71E10 - 0x00EED530            ; ovl_En_Po_Desert
+.org 0x80B72328
+    jal   cm_po_des_t6_s0_d
+.org 0x80B724B0
+    jal   cm_po_des_t6_a0_d
+.headersize 0x80A66F40 - 0x00DE98A0            ; ovl_En_Ik
+.org 0x80A67D80
+    jal   cm_ik_t7_s0_d
+.org 0x80A68710
+    jal   cm_ik_t2_s1_d
+.headersize 0x80A7F8B0 - 0x00E021F0            ; ovl_En_Kusa
+.org 0x80A809FC
+    jal   cm_kusa_t7_a0_i
+.headersize 0x80B3DE80 - 0x00EB95B0            ; ovl_En_Hintnuts
+.org 0x80B3E5E0
+    jal   cm_hintnuts_t6_s0_d
+.org 0x80B3E834
+    jal   cm_hintnuts_t6_a2_d
+.org 0x80B3E8B8
+    jal   cm_hintnuts_t6_s0_d
+.org 0x80B3ED00
+    jal   cm_hintnuts_t6_s0_d
+.org 0x80B3EFF0
+    jal   cm_hintnuts_t6_s0_d
+.headersize 0x80B40070 - 0x00EBB7A0            ; ovl_En_Shopnuts
+.org 0x80B40428
+    jal   cm_shopnuts_t6_s0_d
+.org 0x80B4067C
+    jal   cm_shopnuts_t6_a2_d
+.org 0x80B40700
+    jal   cm_shopnuts_t6_s0_d
+.headersize 0x80B3F8B0 - 0x00EBAFE0            ; ovl_En_Nutsball
+.org 0x80B3FA38
+    jal   cm_nutsball_t8_s0_d
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
 ; build the debug save -> File 1/2/3 are full-inventory saves.
