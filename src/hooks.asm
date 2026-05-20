@@ -276,6 +276,70 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 28: Bari (En_Vali) timer + lightningTimer + slingshotReactionTimer ----
+; Jabu-Jabu / Forest jellyfish enemy. Random Rand_S16Offset(10,10) seed at
+; z_en_vali.c:263 — rules out seed-mod. Pattern E tick-mod.
+; Fields:
+;   timer                  (s16 @ 0x186, header /* 0x196 */)
+;   lightningTimer         (u8  @ 0x184, header /* 0x194 */)
+;   slingshotReactionTimer (u8  @ 0x185, header /* 0x195 */)
+
+vali_timer_a0_t6:                              ; (a0, t6) sh, 0x186
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, vta0t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, vta0t6_store
+    nop
+    addiu t6, t6, 1
+vta0t6_store:
+    sh    t6, 0x186(a0)
+    jr    ra
+    lh    v0, 0x186(a0)
+
+vali_timer_s0_t6:                              ; (s0, t6) sh, 0x186
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, vts0t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, vts0t6_store
+    nop
+    addiu t6, t6, 1
+vts0t6_store:
+    sh    t6, 0x186(s0)
+    jr    ra
+    lh    v0, 0x186(s0)
+
+vali_light_a0_t6:                              ; (a0, t6) sb, 0x184
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, vla0t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, vla0t6_store
+    nop
+    addiu t6, t6, 1
+vla0t6_store:
+    sb    t6, 0x184(a0)
+    jr    ra
+    lbu   v0, 0x184(a0)
+
+vali_sling_s0_t6:                              ; (s0, t6) sb, 0x185
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, vss0t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, vss0t6_store
+    nop
+    addiu t6, t6, 1
+vss0t6_store:
+    sb    t6, 0x185(s0)
+    jr    ra
+    lbu   v0, 0x185(s0)
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +402,19 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 28 — ovl_En_Vali (Bari) timer + lightningTimer + slingshotReactionTimer
+.headersize 0x8090B630 - 0x00CA8DC0
+.org 0x8090C408                                ; sh t6,390(a0)
+    jal   vali_timer_a0_t6
+.org 0x8090C614                                ; sh t6,390(s0)
+    jal   vali_timer_s0_t6
+.org 0x8090C6C4                                ; sh t6,390(s0)
+    jal   vali_timer_s0_t6
+.org 0x8090C2B8                                ; sb t6,388(a0)
+    jal   vali_light_a0_t6
+.org 0x8090C124                                ; sb t6,389(s0)
+    jal   vali_sling_s0_t6
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
