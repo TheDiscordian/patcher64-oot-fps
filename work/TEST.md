@@ -57,23 +57,11 @@ Each bug is a counter that ticks 1.5× too fast at broken-30fps. Lines give the
   the animation: attack/recovery cadence runs ~1.5× faster at broken-30fps
   (raw AI timers). Toggle L+Z to compare. Confirmed bug, fix pending — this
   test gauges how aggressive the per-actor sweep needs to be.
-- 💀 **Bucket 9 — ReDead grab damage** 🔨 RE-TEST — **Map Select → entry 20
-  (Temple of Time), press B for adult Link** — walk up to a ReDead and let it
-  grab you. Time how fast your health drops while mashing to escape. Fixed: ~3
-  hearts per ~6 s, mash-out feels achievable. Broken (control ROM): hearts
-  drop ~1.5× faster, hard to mash out. Toggle L+Z to compare.
-- 🎵 **Bucket 10a — Suns Song stun (ReDead)** 🔨 RE-TEST — Temple of Time
-  with adult Link, learn Suns Song first (or use a save that has it). Stun a
-  ReDead with Suns Song. Fixed: ReDead stays grey-stunned for ~30 s before
-  recovering. Broken (control): ~20 s. Toggle L+Z to compare. (Skip if Suns
-  Song not in inventory — minor priority.)
-- 🔥 **Bucket 10b — Fire burn (ReDead/Gibdo)** 🔨 RE-TEST — Use Din's Fire
-  or fire arrows on a ReDead. Watch how long the red flash/colour filter
-  lasts. Fixed: ~2 s. Broken: ~1.3 s. Subtle but should match between FPS
-  toggles.
-- 😱 **Bucket 10c — ReDead scream cadence** 🔨 RE-TEST — Stand in range of a
-  ReDead in Temple of Time. Listen for how often it screams to stun you.
-  Fixed: screams every ~3 s. Broken: every ~2 s (more aggressive).
+- 💀 **Bucket 9 — ReDead grab damage** ✅ VERIFIED (user, 2026-05-19) —
+  ReDeads "seem to be working well" at Temple of Time test.
+- 🎵 **Bucket 10 — ReDead AI timers** ✅ VERIFIED (user, 2026-05-19) — same
+  test run as B9. Covers sunsSongStunTimer, fireTimer, playerStunWaitTimer
+  (scream cooldown) and grabWaitTimer.
 
 ## Map Select — navigate by NUMBER
 
