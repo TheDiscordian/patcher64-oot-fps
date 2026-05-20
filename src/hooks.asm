@@ -276,6 +276,35 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 18: frozen-enemy ice (Obj_Ice_Poly) meltTimer tick-mod ----
+; Obj_Ice_Poly is the ice block that wraps an enemy when you blue-fire / ice-
+; arrow them. Its `meltTimer` (s16 @ 0x142; header /* 0x152 */) is BOTH a
+; countdown AND a parameter to the visible-scale formula at z_obj_ice_poly.c:187
+;   scale.y = sScale[params] * (0.5 + meltTimer * 0.0125)
+; The formula is calibrated for meltTimer in [0, 40]. Seed-mod would push the
+; value out of that range and break the visual shrink. tick-mod (skip 1/3 of
+; decrements at 30 fps via frame_phase) keeps the value range intact while
+; matching 20 fps wall-clock for the "frozen / melting" duration.
+;
+; Hook the decrement-store at 0x80A78E38. The original delay-slot at PC+4 is
+; `lh v0,322(s0)` which reloads v0 for the downstream `mtc1 v0,$f6` scale
+; calculation — we re-do that lh in jr ra's delay slot so v0 reflects the
+; authoritative post-store value.
+
+ice_poly_tick:                                 ; replaces sh t6,322(s0) at 0x80A78E38
+    lui   t2, 0x8042                           ; t2 scratch (t6 is the decremented value)
+    lbu   t2, -0x67CE(t2)                      ; fps_switch
+    beqz  t2, ipt_store                        ; 20 fps -> always decrement
+    lui   t2, 0x801C                           ; (delay slot)
+    lbu   t2, 0x6FB4(t2)                       ; global frame phase
+    bnez  t2, ipt_store                        ; phase 1/2 -> decrement
+    nop
+    addiu t6, t6, 1                            ; phase 0 -> undo decrement
+ipt_store:
+    sh    t6, 0x142(s0)                        ; authoritative store
+    jr    ra
+    lh    v0, 0x142(s0)                        ; (delay slot) reload v0 for downstream scale calc
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +367,11 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 18 — ovl_Obj_Ice_Poly (frozen-enemy ice meltTimer)
+.headersize 0x80A787D0 - 0x00DFB110
+.org 0x80A78E38                                ; was `sh t6,322(s0)` in ObjIcePoly_Melt
+    jal   ice_poly_tick
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
