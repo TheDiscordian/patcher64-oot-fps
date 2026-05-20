@@ -276,6 +276,70 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 44: Boss_Tw (Twinrova) state-machine timers — tick-mod ----
+; Twinrova (Spirit Temple boss). timers[5] array drives every phase
+; (intro, kotake/koume idle, combined attack, beam exchange).
+; Source has 3 separate for-loop decrements; in compiled code each
+; loop body has a single sh sites that decrements timers[i] inside
+; the iteration. Hooking those 3 sh writes covers all 5 timers via
+; the same Pattern E mechanism (loop body skips on phase 0).
+; Plus csSfxTimer (single ++ site).
+; Source has timers[0] == 0 strict-eq checks at many lines + 
+; timers[1] < 50 / < 10 thresholds (lines 1029-1030).
+
+tw_csSfx_inc:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, tw_csSfx_inc_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, tw_csSfx_inc_st
+    nop
+    addiu t7, t7, -1
+tw_csSfx_inc_st:
+    jr    ra
+    sh    t7, 0x5EE(s1)
+
+tw_loop_v0_t2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, tw_loop_v0_t2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, tw_loop_v0_t2_st
+    nop
+    addiu t2, t2, 1
+tw_loop_v0_t2_st:
+    jr    ra
+    sh    t2, 0x168(v0)
+
+tw_loop_v0_t9:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, tw_loop_v0_t9_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, tw_loop_v0_t9_st
+    nop
+    addiu t9, t9, 1
+tw_loop_v0_t9_st:
+    jr    ra
+    sh    t9, 0x168(v0)
+
+tw_loop_v1_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, tw_loop_v1_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, tw_loop_v1_t7_st
+    nop
+    addiu t7, t7, 1
+tw_loop_v1_t7_st:
+    jr    ra
+    sh    t7, 0x168(v1)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +402,17 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 44 injections ----
+.headersize 0x809D1160 - 0x00D612E0            ; ovl_Boss_Tw
+.org 0x809D5B28
+    jal   tw_csSfx_inc
+.org 0x809D8D6C
+    jal   tw_loop_v0_t2
+.org 0x809D9390
+    jal   tw_loop_v0_t9
+.org 0x809DECF8
+    jal   tw_loop_v1_t7
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
