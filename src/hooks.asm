@@ -276,6 +276,99 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 40: Boss_Goma additional timers — tick-mod ----
+; B12 already handled patienceTimer. This bucket covers the rest:
+;   blinkTimer, spawnGohmasActionTimer, eyeClosedTimer, unusedTimer,
+;   timer (boss state machine), sfxFaintTimer.
+;
+; Source has a "timer == 80" strict-equality check that drives a
+; state transition (line 1142 of z_boss_goma.c). Tick-mod (Pattern E)
+; preserves the value sequence so the timer lands on 80, then again
+; on each value below, just stays ~1.5 frames per value at 30 fps.
+; The timer is also re-seeded to 270, 80, 70, 30, etc - those one-shot
+; assignments are wall-clock-correct under tick-mod (270 internal ticks
+; = ~405 real frames at 30 fps = 13.5s = same as 20fps wall-clock).
+; 6 sites, 6 unique hook variants.
+
+goma2_blink_dec:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, goma2_blink_dec_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, goma2_blink_dec_store
+    nop
+    addiu t1, t1, 1                            ; phase 0 -> undo
+goma2_blink_dec_store:
+    jr    ra
+    sh    t1, 0x1B4(s2)                       ; (delay slot) original sh
+
+goma2_spawnAct_inc:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, goma2_spawnAct_inc_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, goma2_spawnAct_inc_store
+    nop
+    addiu t9, t9, -1                            ; phase 0 -> undo
+goma2_spawnAct_inc_store:
+    jr    ra
+    sh    t9, 0x1A2(s0)                       ; (delay slot) original sh
+
+goma2_eyeClosed_dec:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, goma2_eyeClosed_dec_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, goma2_eyeClosed_dec_store
+    nop
+    addiu t9, t9, 1                            ; phase 0 -> undo
+goma2_eyeClosed_dec_store:
+    jr    ra
+    sh    t9, 0x18C(s0)                       ; (delay slot) original sh
+
+goma2_unused_inc:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, goma2_unused_inc_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, goma2_unused_inc_store
+    nop
+    addiu t9, t9, -1                            ; phase 0 -> undo
+goma2_unused_inc_store:
+    jr    ra
+    sh    t9, 0x192(s1)                       ; (delay slot) original sh
+
+goma2_timer_dec:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, goma2_timer_dec_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, goma2_timer_dec_store
+    nop
+    addiu t0, t0, 1                            ; phase 0 -> undo
+goma2_timer_dec_store:
+    jr    ra
+    sh    t0, 0x1C4(s0)                       ; (delay slot) original sh
+
+goma2_sfxFaint_dec:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, goma2_sfxFaint_dec_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, goma2_sfxFaint_dec_store
+    nop
+    addiu t1, t1, 1                            ; phase 0 -> undo
+goma2_sfxFaint_dec_store:
+    jr    ra
+    sh    t1, 0x1C6(s0)                       ; (delay slot) original sh
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +431,21 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 40 injections ----
+.headersize 0x808A7370 - 0x00C44C30            ; ovl_Boss_Goma
+.org 0x808AA3C8                                ; was sh t1,0x1B4(s2) (--)
+    jal   goma2_blink_dec
+.org 0x808AADA8                                ; was sh t9,0x1A2(s0) (++)
+    jal   goma2_spawnAct_inc
+.org 0x808AB664                                ; was sh t9,0x18C(s0) (--)
+    jal   goma2_eyeClosed_dec
+.org 0x808AB828                                ; was sh t9,0x192(s1) (++)
+    jal   goma2_unused_inc
+.org 0x808ABD3C                                ; was sh t0,0x1C4(s0) (--)
+    jal   goma2_timer_dec
+.org 0x808ABD4C                                ; was sh t1,0x1C6(s0) (--)
+    jal   goma2_sfxFaint_dec
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
