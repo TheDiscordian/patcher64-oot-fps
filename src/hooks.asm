@@ -276,6 +276,24 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 19: Shadow Temple truth spinner (Bg_Haka_Gate) vTimer=60 ----
+; The truth-spinner gate that opens a floor section in the Shadow Temple.
+; vTimer (s16 @ 0x15A, header /* 0x16A */) gates the floor-open delay; the
+; main seed = 60 (~3 s wait at 20 fps, collapses to 2 s on stock 30 fps).
+; Source only `== 0` checks the field, seed-mod is sound. The two `vTimer=5`
+; seed sites are sub-perceptual (0.25 s) AND their `li` patterns don't store
+; the t8=5 value directly — deferred.
+
+haka_gate_seed_60:                             ; replaces li t2,60 at 0x80A30A18
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, hgs_done                         ; 20 fps -> keep t2 = 60
+    li    t2, 60                               ; (delay slot)
+    li    t2, 90                               ; 30 fps -> 60 * 1.5
+hgs_done:
+    jr    ra
+    nop
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +356,11 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 19 — ovl_Bg_Haka_Gate (Shadow Temple truth-spinner gate)
+.headersize 0x80A30240 - 0x00DB9D70
+.org 0x80A30A18                                ; was `li t2,60` (vTimer=60 seed)
+    jal   haka_gate_seed_60
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
