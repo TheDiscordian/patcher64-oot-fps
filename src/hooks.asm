@@ -276,6 +276,82 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 38: En_Encount2 (Death Mountain spawner) timers — tick-mod ----
+; Background actor that drives Death Mountain falling-rock encounters
+; and ambient effects (smoke quakes). 3 timer fields:
+;   envEffectsTimer (++ and --) -> ramp/decay of quake & smoke;
+;     used in formula unk_17C = envEffectsTimer / 60.0f
+;   deathMountainSpawnerTimer (--) -> seeds 100 or 200 for next rock
+;   effectSpawnTimer (--) -> seeds 5 for effect spawn cooldown
+; The envEffectsTimer / 60.0f formula requires tick-mod (Pattern E).
+; Other fields use !=0/==0/==1 checks but tick-mod is uniformly safe.
+
+enc2_env_dec_s0_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, enc2_env_dec_s0_t1_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, enc2_env_dec_s0_t1_store
+    nop
+    addiu t1, t1, 1                            ; phase 0 -> undo
+enc2_env_dec_s0_t1_store:
+    jr    ra
+    sh    t1, 0x168(s0)                       ; (delay slot) original sh
+
+enc2_env_inc_s0_t2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, enc2_env_inc_s0_t2_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, enc2_env_inc_s0_t2_store
+    nop
+    addiu t2, t2, -1                            ; phase 0 -> undo
+enc2_env_inc_s0_t2_store:
+    jr    ra
+    sh    t2, 0x168(s0)                       ; (delay slot) original sh
+
+enc2_env_inc_s0_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, enc2_env_inc_s0_t1_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, enc2_env_inc_s0_t1_store
+    nop
+    addiu t1, t1, -1                            ; phase 0 -> undo
+enc2_env_inc_s0_t1_store:
+    jr    ra
+    sh    t1, 0x168(s0)                       ; (delay slot) original sh
+
+enc2_dms_dec_a0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, enc2_dms_dec_a0_t6_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, enc2_dms_dec_a0_t6_store
+    nop
+    addiu t6, t6, 1                            ; phase 0 -> undo
+enc2_dms_dec_a0_t6_store:
+    jr    ra
+    sh    t6, 0x144(a0)                       ; (delay slot) original sh
+
+enc2_spawn_dec_a0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, enc2_spawn_dec_a0_t8_store
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, enc2_spawn_dec_a0_t8_store
+    nop
+    addiu t8, t8, 1                            ; phase 0 -> undo
+enc2_spawn_dec_a0_t8_store:
+    jr    ra
+    sh    t8, 0x14E(a0)                       ; (delay slot) original sh
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +414,19 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 38 injections ----
+.headersize 0x8097F200 - 0x00D1C890            ; ovl_En_Encount2
+.org 0x8097F3CC                                ; was sh t1,0x168(s0) (--)
+    jal   enc2_env_dec_s0_t1
+.org 0x8097F480                                ; was sh t2,0x168(s0) (++)
+    jal   enc2_env_inc_s0_t2
+.org 0x8097F4F4                                ; was sh t1,0x168(s0) (++)
+    jal   enc2_env_inc_s0_t1
+.org 0x8097FAA8                                ; was sh t6,0x144(a0) (--)
+    jal   enc2_dms_dec_a0_t6
+.org 0x8097FAC8                                ; was sh t8,0x14E(a0) (--)
+    jal   enc2_spawn_dec_a0_t8
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
