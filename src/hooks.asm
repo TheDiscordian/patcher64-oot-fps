@@ -276,6 +276,109 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 32: En_Rr (Like-Like) AI timers — tick-mod ----
+; Like-Likes have 7 timer fields all updated in one tight block:
+; frameCount(++), scrollTimer(++), actionTimer/grabTimer/ocTimer/
+; invincibilityTimer/effectTimer (all --). Source uses value-keyed
+; checks (frameCount % 8 == 0, frameCount < 40, frameCount == 88,
+; frameCount * 25.0f for death animation, scrollTimer * -6 for texture
+; scroll). Tick-mod via Pattern E preserves value sequence -> matches
+; 20 fps wall-clock for the swallow/eject animation and texture pulse.
+;
+; 7 sites in one ~100-byte block (Update fn), all base=s1.
+
+rr_fc_s1_t7:                                ; frameCount++
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, rr_fc_s1_t7_store                     ; 20 fps -> apply
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, rr_fc_s1_t7_store                     ; phase 1/2 -> apply
+    nop
+    addiu t7, t7, -1                            ; phase 0 -> undo
+rr_fc_s1_t7_store:
+    jr    ra
+    sh    t7, 0x1D8(s1)                       ; (delay slot) original sh
+
+rr_scroll_s1_t0:                                ; scrollTimer++
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, rr_scroll_s1_t0_store                     ; 20 fps -> apply
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, rr_scroll_s1_t0_store                     ; phase 1/2 -> apply
+    nop
+    addiu t0, t0, -1                            ; phase 0 -> undo
+rr_scroll_s1_t0_store:
+    jr    ra
+    sh    t0, 0x1DC(s1)                       ; (delay slot) original sh
+
+rr_action_s1_t1:                                ; actionTimer--
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, rr_action_s1_t1_store                     ; 20 fps -> apply
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, rr_action_s1_t1_store                     ; phase 1/2 -> apply
+    nop
+    addiu t1, t1, 1                            ; phase 0 -> undo
+rr_action_s1_t1_store:
+    jr    ra
+    sh    t1, 0x1DA(s1)                       ; (delay slot) original sh
+
+rr_grab_s1_t2:                                ; grabTimer--
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, rr_grab_s1_t2_store                     ; 20 fps -> apply
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, rr_grab_s1_t2_store                     ; phase 1/2 -> apply
+    nop
+    addiu t2, t2, 1                            ; phase 0 -> undo
+rr_grab_s1_t2_store:
+    jr    ra
+    sh    t2, 0x1DE(s1)                       ; (delay slot) original sh
+
+rr_oc_s1_t3:                                ; ocTimer--
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, rr_oc_s1_t3_store                     ; 20 fps -> apply
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, rr_oc_s1_t3_store                     ; phase 1/2 -> apply
+    nop
+    addiu t3, t3, 1                            ; phase 0 -> undo
+rr_oc_s1_t3_store:
+    jr    ra
+    sh    t3, 0x1E4(s1)                       ; (delay slot) original sh
+
+rr_inv_s1_t4:                                ; invincibilityTimer--
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, rr_inv_s1_t4_store                     ; 20 fps -> apply
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, rr_inv_s1_t4_store                     ; phase 1/2 -> apply
+    nop
+    addiu t4, t4, 1                            ; phase 0 -> undo
+rr_inv_s1_t4_store:
+    jr    ra
+    sh    t4, 0x1E0(s1)                       ; (delay slot) original sh
+
+rr_eff_s1_t5:                                ; effectTimer--
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, rr_eff_s1_t5_store                     ; 20 fps -> apply
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame phase
+    bnez  v0, rr_eff_s1_t5_store                     ; phase 1/2 -> apply
+    nop
+    addiu t5, t5, 1                            ; phase 0 -> undo
+rr_eff_s1_t5_store:
+    jr    ra
+    sh    t5, 0x1E2(s1)                       ; (delay slot) original sh
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +441,23 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 32 injections ----
+.headersize 0x809E6C60 - 0x00D74360            ; ovl_En_Rr
+.org 0x809E858C                                ; was sh t7,0x1D8(s1) (frameCount++)
+    jal   rr_fc_s1_t7
+.org 0x809E8598                                ; was sh t0,0x1DC(s1) (scrollTimer++)
+    jal   rr_scroll_s1_t0
+.org 0x809E85AC                                ; was sh t1,0x1DA(s1) (actionTimer--)
+    jal   rr_action_s1_t1
+.org 0x809E85C0                                ; was sh t2,0x1DE(s1) (grabTimer--)
+    jal   rr_grab_s1_t2
+.org 0x809E85D0                                ; was sh t3,0x1E4(s1) (ocTimer--)
+    jal   rr_oc_s1_t3
+.org 0x809E85E0                                ; was sh t4,0x1E0(s1) (invincibilityTimer--)
+    jal   rr_inv_s1_t4
+.org 0x809E85F0                                ; was sh t5,0x1E2(s1) (effectTimer--)
+    jal   rr_eff_s1_t5
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
