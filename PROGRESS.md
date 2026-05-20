@@ -26,6 +26,10 @@ injected. Boot CRC at `0x10` (`93D30FBB`/`9FF3024D`) is unchanged from the base
 | Bucket 13 — Fire Temple elevator | 🔨 BUILT (PR #7) — Bg_Hidan_Syoku timer tick-mod (3 decrement sites share one hook). |
 | Bucket 14 — Forest falling block | 🔨 BUILT (PR #8) — Bg_Mori_Rakkatenjo timer tick-mod (s32 field). |
 | Bucket 15 — Arrow Trap        | 🔨 BUILT (PR #9) — En_Arow_Trap attackTimer 80→120 seed-mod (init + reseed). |
+| Bucket 16 — Anubis (En_Anubice) | 🔨 BUILT (PR #12) — deathTimer 20→30, knockbackTimer 10→15. |
+| Bucket 17 — Dead Hand (En_Dha) | 🔨 BUILT (PR #13) — actionTimer 15→23, 300→450. Random seed at line 199 deferred. |
+| Bucket 18 — Obj_Ice_Poly      | 🔨 BUILT (PR #14) — meltTimer tick-mod (affects every freezable enemy in the game). |
+| Bucket 19 — Bg_Haka_Gate      | 🔨 BUILT (PR #15) — vTimer 60→90 (truth-spinner floor-open delay). vTimer=5 sites deferred. |
 | Minigame timers (HUD)         | ✅ payload runtime-patches the on-screen counter |
 | Minigame mechanics (actors)   | ❓ UNVERIFIED — actor sweep pending (181 candidates) |
 | Other enemies/bosses/traps    | ❓ SUSPECTED — many actor candidates remain; see "Remaining" below |
