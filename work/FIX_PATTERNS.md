@@ -15,7 +15,7 @@ All hooks live at payload free space `0x8041AE00+` and read `fps_switch` at `0x8
 
 **When**: the seed assignment is a plain `li REG, ORIG` and the `li` is **not** in any branch's delay slot. The subsequent `sh`/`sb` store can be a few instructions later (no jal in between that would clobber the seed register).
 
-**Buckets**: B4, B9, B10 sun_song / fire, B11 cooldown / death-ish, B12, B15 init, B16, B17 (both sites), B19.
+**Buckets**: B4 ✅, B9 ✅, B10 sun_song / fire ✅, B11 cooldown 🚧, B12 🚧, B15 init 🚧, B16 🚧, B17 (both sites) 🚧, B19 🚧.
 
 ```asm
 seed_X:
@@ -37,7 +37,7 @@ Caller's original `sh REG, OFFSET(BASE)` still runs further down with the modifi
 
 **When**: the `li REG, ORIG` is in a branch's delay slot, so we can't put a `jal` at the `li` (branch in branch delay slot = UB). Instead patch the subsequent `sh`/`sb` store. The hook scales REG itself and does the store in its `jr ra` delay slot.
 
-**Buckets**: B9 grab seeds, B10 fireTimer / playerStunWaitTimer, B11 attack-seed, B11 ricochet-seed.
+**Buckets**: B9 grab seeds ✅, B10 fireTimer / playerStunWaitTimer ✅, B11 attack-seed + ricochet-seed 🚧.
 
 ```asm
 seed_X:
@@ -57,7 +57,7 @@ sX_store:
 
 **When**: the `li REG, ORIG` is *immediately* followed by `sh REG, OFFSET(BASE)` AND the next-next instruction is the function epilogue (`lw ra, N(sp)`). Patching the `sh` would put the `lw ra` in our jal's delay slot, clobbering `ra` and breaking the return. So patch the `li` — the delay-slot `sh` then fires with the **stale** REG value (whatever was in REG from earlier code), and the hook does its own *authoritative* store to overwrite that stale value.
 
-**Buckets**: B11 ricochet (cooldownTimer=5), B12 patience (site 2), B15 reseed.
+**Buckets**: B11 ricochet (cooldownTimer=5) 🚧, B12 patience (site 2) 🚧, B15 reseed 🚧 — all built but unverified.
 
 ```asm
 seed_X:
@@ -79,7 +79,7 @@ The original delay-slot store at the jal site writes garbage to memory briefly, 
 
 **When**: two `sh`/`sb` stores back-to-back (`sb REG1, OFFSET1(BASE); sb REG2, OFFSET2(BASE)`). Patching both with separate `jal`s would put one jal in the other's delay slot. Instead patch the first store with `jal`; the second store runs as that jal's delay slot (writing the original REG2 value). The hook then rewrites both fields at 30 fps and does its own first-field store in `jr ra`'s delay slot.
 
-**Buckets**: B10 stun10_grab_seed (playerStunWaitTimer + grabWaitTimer back-to-back).
+**Buckets**: B10 stun10_grab_seed (playerStunWaitTimer + grabWaitTimer back-to-back) ✅.
 
 ```asm
 pair_X:
@@ -101,7 +101,9 @@ pX_store:
 
 **When**: the field has intermediate value-keyed comparisons (`< N`, `% N`, `>> N`) — scaling the seed would break them. Hook the `sh`/`sb REG, OFFSET(BASE)` that stores the decremented value. On `frame_phase == 0` at 30 fps, undo the decrement (add 1 back to REG); else store as-is.
 
-**Buckets**: B7 torch, B11 deathTimer / iceTimer, B13 Fire elevator (×3), B14 falling block, B18 ice melt, B20 Deku Baba (×7, four register variants), B21 Shadow traps (×5, four variants).
+**Buckets**:
+- ✅ user-verified in-game: B3 (bomb fuse), B7 (torch)
+- 🚧 built + byte-verified, not user-confirmed yet: B11 deathTimer / iceTimer, B13 Fire elevator (×3), B14 falling block, B18 ice melt, B20 Deku Baba (×7, four register variants), B21 Shadow traps (×5, four variants)
 
 ```asm
 tick_X:
@@ -205,9 +207,11 @@ sX_return:
 
 ## What's verified vs theoretical
 
-- **User-confirmed in-game** as of this write: B2, B3, B4, B5, B6 (incidental), B7, B8, B9, B10.
-- **Built + byte-verified, awaiting user-test**: B11–B21.
+The project's verification methodology is: **confirm the bug exists on the stock 30 fps control ROM, then fix it and confirm the fix on the patched ROM**. A bucket isn't verified until BOTH halves have been A/B-checked in-game.
 
-The user-confirmed patterns are A (B4, B9 seeds), B (B9/B10 stores in delay slots), F (B2 gravity, B5 step), G (B8 letterbox, frame_phase), and tick-mod variants of E (B3 bomb fuse, B7 torch — both via `frame_phase`).
+- **User-confirmed working in-game** as of this write: B2, B3, B4, B5, B6 (incidental), B7, B8, B9, B10.
+- **Built + byte-verified, NOT yet user-confirmed in-game** (these patterns shouldn't be relied on as proven until they pass the A/B test): B11–B21.
 
-Tick-mod with v0-reload (Pattern E) — used in B11/B13/B14/B18/B20/B21 — is theoretically derived from the same family but not yet user-A/B-confirmed for the downstream-branch-on-v0 case.
+  - B11 specifically: in PR #1; user-test caught Armos lunge / death animations are broken on stock 30 fps Redux. Those bugs are in-scope for this project (any stock-30 fps bug that affects an actor B11 touches needs fixing before B11 can be called verified), and remain open at the time of writing.
+
+So the verified patterns are: A (B4, B9 seeds), B (B9/B10 stores in delay slots), F (B2 gravity, B5 step), G (B8 letterbox, frame_phase), and tick-mod variants of E (B3 bomb fuse, B7 torch). Every other use of these patterns — including the v0-reload variant of E, Patterns C and D, and every B11+ application — is theoretically derived from the verified ones but not yet proven in-game.
