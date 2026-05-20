@@ -276,6 +276,159 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 46: En_Goma + En_Reeba AI timers — tick-mod ----
+; Two enemies bundled (6 + 5 sites):
+;   En_Goma (Gohma Larva): egg(++), playerDetection(++), hurt(--),
+;     invincibility(--), action(--), stun(--)
+;   En_Reeba (Leever - sand worm): bigLeever(--), move(--), wait(--),
+;     sfx(--), damaged(--)
+; All standard simple-gate timers. Tick-mod via Pattern E so all 11
+; sites slow to 2/3 rate at 30 fps -> matches 20 fps wall-clock.
+
+le_pdet_s1_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, le_pdet_s1_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, le_pdet_s1_t7_st
+    nop
+    addiu t7, t7, -1
+le_pdet_s1_t7_st:
+    jr    ra
+    sh    t7, 0x2B6(s1)
+
+le_stun_s0_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, le_stun_s0_t1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, le_stun_s0_t1_st
+    nop
+    addiu t1, t1, 1
+le_stun_s0_t1_st:
+    jr    ra
+    sh    t1, 0x2E8(s0)
+
+le_hurt_s0_t6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, le_hurt_s0_t6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, le_hurt_s0_t6_st
+    nop
+    addiu t6, t6, 1
+le_hurt_s0_t6_st:
+    jr    ra
+    sh    t6, 0x2B2(s0)
+
+le_action_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, le_action_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, le_action_s0_t7_st
+    nop
+    addiu t7, t7, 1
+le_action_s0_t7_st:
+    jr    ra
+    sh    t7, 0x2BC(s0)
+
+le_inv_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, le_inv_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, le_inv_s0_t8_st
+    nop
+    addiu t8, t8, 1
+le_inv_s0_t8_st:
+    jr    ra
+    sh    t8, 0x2BA(s0)
+
+le_egg_s0_t2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, le_egg_s0_t2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, le_egg_s0_t2_st
+    nop
+    addiu t2, t2, -1
+le_egg_s0_t2_st:
+    jr    ra
+    sh    t2, 0x2B0(s0)
+
+le_bigL_s0_t7:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, le_bigL_s0_t7_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, le_bigL_s0_t7_st
+    nop
+    addiu t7, t7, 1
+le_bigL_s0_t7_st:
+    jr    ra
+    sh    t7, 0x260(s0)
+
+le_move_s0_t8:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, le_move_s0_t8_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, le_move_s0_t8_st
+    nop
+    addiu t8, t8, 1
+le_move_s0_t8_st:
+    jr    ra
+    sh    t8, 0x262(s0)
+
+le_wait_s0_t0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, le_wait_s0_t0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, le_wait_s0_t0_st
+    nop
+    addiu t0, t0, 1
+le_wait_s0_t0_st:
+    jr    ra
+    sh    t0, 0x268(s0)
+
+le_sfx_s0_t1:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, le_sfx_s0_t1_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, le_sfx_s0_t1_st
+    nop
+    addiu t1, t1, 1
+le_sfx_s0_t1_st:
+    jr    ra
+    sh    t1, 0x264(s0)
+
+le_dmg_s0_t2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, le_dmg_s0_t2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, le_dmg_s0_t2_st
+    nop
+    addiu t2, t2, 1
+le_dmg_s0_t2_st:
+    jr    ra
+    sh    t2, 0x266(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +491,32 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 46 injections ----
+.headersize 0x808B3FC0 - 0x00C51860            ; ovl_En_Goma
+.org 0x808B4834
+    jal   le_pdet_s1_t7
+.org 0x808B5690
+    jal   le_stun_s0_t1
+.org 0x808B57D4
+    jal   le_hurt_s0_t6
+.org 0x808B5BAC
+    jal   le_action_s0_t7
+.org 0x808B5BBC
+    jal   le_inv_s0_t8
+.org 0x808B5C44
+    jal   le_egg_s0_t2
+.headersize 0x80890590 - 0x00C2DE60            ; ovl_En_Reeba
+.org 0x808919E8
+    jal   le_bigL_s0_t7
+.org 0x808919F8
+    jal   le_move_s0_t8
+.org 0x80891A08
+    jal   le_wait_s0_t0
+.org 0x80891A18
+    jal   le_sfx_s0_t1
+.org 0x80891A28
+    jal   le_dmg_s0_t2
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
