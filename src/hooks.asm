@@ -276,6 +276,375 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 69: 22 misc Bg_ object actors (44 sites) — tick-mod ----
+; Bg_Ddan, Bg_Bowl, Bg_Gnd, Bg_Haka, Bg_Jya, Bg_Mori, Bg_Relay,
+; Bg_Spot02/06/12/18, Bg_Vb, Bg_Ydan etc. Pattern E throughout.
+
+bg_ddan_jd_t6_a3:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_ddan_jd_t6_a3_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_ddan_jd_t6_a3_st
+    nop
+    addiu t6, t6, 1
+bg_ddan_jd_t6_a3_st:
+    jr    ra
+    sh    t6, 0x15A(a3)
+
+bg_ddan_kd_t7_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_ddan_kd_t7_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_ddan_kd_t7_s0_st
+    nop
+    addiu t7, t7, 1
+bg_ddan_kd_t7_s0_st:
+    jr    ra
+    sh    t7, 0x158(s0)
+
+bg_bowl_wall_t6_a0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_bowl_wall_t6_a0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_bowl_wall_t6_a0_st
+    nop
+    addiu t6, t6, 1
+bg_bowl_wall_t6_a0_st:
+    jr    ra
+    sh    t6, 0x172(a0)
+
+bg_gnd_firem_t7_a0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_gnd_firem_t7_a0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_gnd_firem_t7_a0_st
+    nop
+    addiu t7, t7, 1
+bg_gnd_firem_t7_a0_st:
+    jr    ra
+    sh    t7, 0x160(a0)
+
+bg_gnd_firem_t7_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_gnd_firem_t7_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_gnd_firem_t7_s0_st
+    nop
+    addiu t7, t7, 1
+bg_gnd_firem_t7_s0_st:
+    jr    ra
+    sh    t7, 0x160(s0)
+
+bg_haka_meg_t6_a0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_haka_meg_t6_a0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_haka_meg_t6_a0_st
+    nop
+    addiu t6, t6, 1
+bg_haka_meg_t6_a0_st:
+    jr    ra
+    sh    t6, 0x15A(a0)
+
+bg_haka_sgami_t6_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_haka_sgami_t6_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_haka_sgami_t6_s0_st
+    nop
+    addiu t6, t6, 1
+bg_haka_sgami_t6_s0_st:
+    jr    ra
+    sh    t6, 0x142(s0)
+
+bg_haka_ship_t6_a3:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_haka_ship_t6_a3_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_haka_ship_t6_a3_st
+    nop
+    addiu t6, t6, 1
+bg_haka_ship_t6_a3_st:
+    jr    ra
+    sb    t6, 0x158(a3)
+
+bg_haka_ship_t6_a0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_haka_ship_t6_a0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_haka_ship_t6_a0_st
+    nop
+    addiu t6, t6, 1
+bg_haka_ship_t6_a0_st:
+    jr    ra
+    sb    t6, 0x158(a0)
+
+bg_haka_ship_t6_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_haka_ship_t6_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_haka_ship_t6_s0_st
+    nop
+    addiu t6, t6, 1
+bg_haka_ship_t6_s0_st:
+    jr    ra
+    sb    t6, 0x158(s0)
+
+bg_haka_tubo_t7_s4:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_haka_tubo_t7_s4_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_haka_tubo_t7_s4_st
+    nop
+    addiu t7, t7, 1
+bg_haka_tubo_t7_s4_st:
+    jr    ra
+    sh    t7, 0x158(s4)
+
+bg_haka_zou_t6_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_haka_zou_t6_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_haka_zou_t6_s0_st
+    nop
+    addiu t6, t6, 1
+bg_haka_zou_t6_s0_st:
+    jr    ra
+    sh    t6, 0x15A(s0)
+
+bg_jya_bombc_t9_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_jya_bombc_t9_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_jya_bombc_t9_s0_st
+    nop
+    addiu t9, t9, -1
+bg_jya_bombc_t9_s0_st:
+    jr    ra
+    sh    t9, 0x1A4(s0)
+
+bg_jya_bombc_t7_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_jya_bombc_t7_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_jya_bombc_t7_s0_st
+    nop
+    addiu t7, t7, -1
+bg_jya_bombc_t7_s0_st:
+    jr    ra
+    sh    t7, 0x1A4(s0)
+
+bg_jya_goroi_t7_a0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_jya_goroi_t7_a0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_jya_goroi_t7_a0_st
+    nop
+    addiu t7, t7, -1
+bg_jya_goroi_t7_a0_st:
+    jr    ra
+    sh    t7, 0x1A6(a0)
+
+bg_jya_hahen_t7_a0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_jya_hahen_t7_a0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_jya_hahen_t7_a0_st
+    nop
+    addiu t7, t7, -1
+bg_jya_hahen_t7_a0_st:
+    jr    ra
+    sh    t7, 0x1A0(a0)
+
+bg_mori_hash4_t8_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_mori_hash4_t8_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_mori_hash4_t8_s0_st
+    nop
+    addiu t8, t8, -1
+bg_mori_hash4_t8_s0_st:
+    jr    ra
+    sh    t8, 0x15A(s0)
+
+bg_mori_kaite_t7_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_mori_kaite_t7_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_mori_kaite_t7_s0_st
+    nop
+    addiu t7, t7, -1
+bg_mori_kaite_t7_s0_st:
+    jr    ra
+    sw    t7, 0x158(s0)
+
+bg_relay_obj_t7_a0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_relay_obj_t7_a0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_relay_obj_t7_a0_st
+    nop
+    addiu t7, t7, 1
+bg_relay_obj_t7_a0_st:
+    jr    ra
+    sh    t7, 0x15A(a0)
+
+bg_relay_obj_t6_a2:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_relay_obj_t6_a2_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_relay_obj_t6_a2_st
+    nop
+    addiu t6, t6, 1
+bg_relay_obj_t6_a2_st:
+    jr    ra
+    sh    t6, 0x15A(a2)
+
+bg_spot02_obj_t8_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_spot02_obj_t8_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_spot02_obj_t8_s0_st
+    nop
+    addiu t8, t8, 1
+bg_spot02_obj_t8_s0_st:
+    jr    ra
+    sh    t8, 0x158(s0)
+
+bg_spot02_obj_t8_a0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_spot02_obj_t8_a0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_spot02_obj_t8_a0_st
+    nop
+    addiu t8, t8, -1
+bg_spot02_obj_t8_a0_st:
+    jr    ra
+    sh    t8, 0x158(a0)
+
+bg_spot12_saku_t6_a0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_spot12_saku_t6_a0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_spot12_saku_t6_a0_st
+    nop
+    addiu t6, t6, 1
+bg_spot12_saku_t6_a0_st:
+    jr    ra
+    sh    t6, 0x158(a0)
+
+bg_spot18_bsk_t7_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_spot18_bsk_t7_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_spot18_bsk_t7_s0_st
+    nop
+    addiu t7, t7, -1
+bg_spot18_bsk_t7_s0_st:
+    jr    ra
+    sh    t7, 0x206(s0)
+
+bg_vb_sima_t7_s6:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_vb_sima_t7_s6_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_vb_sima_t7_s6_st
+    nop
+    addiu t7, t7, -1
+bg_vb_sima_t7_s6_st:
+    jr    ra
+    sh    t7, 0x164(s6)
+
+bg_ydan_sp_t6_s5:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_ydan_sp_t6_s5_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_ydan_sp_t6_s5_st
+    nop
+    addiu t6, t6, 1
+bg_ydan_sp_t6_s5_st:
+    jr    ra
+    sh    t6, 0x15A(s5)
+
+bg_ydan_sp_t6_s3:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_ydan_sp_t6_s3_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_ydan_sp_t6_s3_st
+    nop
+    addiu t6, t6, 1
+bg_ydan_sp_t6_s3_st:
+    jr    ra
+    sh    t6, 0x15A(s3)
+
+bg_ydan_sp_t7_s0:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, bg_ydan_sp_t7_s0_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, bg_ydan_sp_t7_s0_st
+    nop
+    addiu t7, t7, 1
+bg_ydan_sp_t7_s0_st:
+    jr    ra
+    sh    t7, 0x15A(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +707,118 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 69 injections ----
+.headersize 0x809006B0 - 0x00C9DE70            ; ovl_Bg_Ddan_Jd
+.org 0x808D99EC
+    jal   bg_ddan_jd_t6_a3
+.headersize 0x80903C30 - 0x00CA13F0            ; ovl_Bg_Ddan_Kd
+.org 0x809040B4
+    jal   bg_ddan_kd_t7_s0
+.headersize 0x80B70FA0 - 0x00EEC6C0            ; ovl_Bg_Bowl_Wall
+.org 0x80B714C0
+    jal   bg_bowl_wall_t6_a0
+.headersize 0x80B66A00 - 0x00EE2130            ; ovl_Bg_Gnd_Firemeiro
+.org 0x80B66B18
+    jal   bg_gnd_firem_t7_a0
+.org 0x80B66B74
+    jal   bg_gnd_firem_t7_s0
+.headersize 0x8097B2E0 - 0x00D18970            ; ovl_Bg_Haka_MeganeBG
+.org 0x8097B748
+    jal   bg_haka_meg_t6_a0
+.org 0x8097B790
+    jal   bg_haka_meg_t6_a0
+.org 0x8097B8A4
+    jal   bg_ddan_jd_t6_a3
+.org 0x8097B968
+    jal   bg_ddan_jd_t6_a3
+.headersize 0x8097C3E0 - 0x00D19A70            ; ovl_Bg_Haka_Sgami
+.org 0x8097CDAC
+    jal   bg_haka_sgami_t6_s0
+.headersize 0x8097B9A0 - 0x00D19030            ; ovl_Bg_Haka_Ship
+.org 0x8097BBFC
+    jal   bg_haka_ship_t6_a3
+.org 0x8097BC54
+    jal   bg_haka_ship_t6_a0
+.org 0x8097BCF4
+    jal   bg_haka_ship_t6_s0
+.org 0x8097BEBC
+    jal   bg_haka_ship_t6_a3
+.org 0x8097BF20
+    jal   bg_haka_ship_t6_a0
+.headersize 0x8099BEC0 - 0x00D30B50            ; ovl_Bg_Haka_Tubo
+.org 0x8099C4F4
+    jal   bg_haka_tubo_t7_s4
+.headersize 0x8099E950 - 0x00D335E0            ; ovl_Bg_Haka_Zou
+.org 0x8099EE10
+    jal   bg_haka_meg_t6_a0
+.org 0x8099F338
+    jal   bg_haka_meg_t6_a0
+.org 0x8099F384
+    jal   bg_haka_zou_t6_s0
+.org 0x8099F508
+    jal   bg_haka_zou_t6_s0
+.org 0x8099F710
+    jal   bg_haka_meg_t6_a0
+.headersize 0x80AC5E50 - 0x00E45C90            ; ovl_Bg_Jya_Bombchuiwa
+.org 0x80AC635C
+    jal   bg_jya_bombc_t9_s0
+.org 0x80AC6458
+    jal   bg_jya_bombc_t7_s0
+.headersize 0x80A31610 - 0x00DBB130            ; ovl_Bg_Jya_Goroiwa
+.org 0x80A31BC0
+    jal   bg_jya_goroi_t7_a0
+.headersize 0x80B3CDC0 - 0x00EB84F0            ; ovl_Bg_Jya_Haheniron
+.org 0x80B3D178
+    jal   bg_jya_hahen_t7_a0
+.headersize 0x809EE470 - 0x00D7BB70            ; ovl_Bg_Mori_Hashira4
+.org 0x809EE718
+    jal   bg_mori_hash4_t8_s0
+.headersize 0x80928440 - 0x00CC5BB0            ; ovl_Bg_Mori_Kaitenkabe
+.org 0x80928594
+    jal   bg_mori_kaite_t7_s0
+.headersize 0x80A7D750 - 0x00E00090            ; ovl_Bg_Relay_Objects
+.org 0x80A7D9A0
+    jal   bg_relay_obj_t7_a0
+.org 0x80A7DB18
+    jal   bg_relay_obj_t6_a2
+.headersize 0x8095A080 - 0x00CF7710            ; ovl_Bg_Spot02_Objects
+.org 0x8095A738
+    jal   bg_spot02_obj_t8_s0
+.org 0x8095B0EC
+    jal   bg_spot02_obj_t8_a0
+.headersize 0x809CAE60 - 0x00D5AFE0            ; ovl_Bg_Spot06_Objects
+.org 0x809CB6B8
+    jal   bg_haka_meg_t6_a0
+.org 0x809CBAAC
+    jal   bg_haka_zou_t6_s0
+.org 0x809CBDE0
+    jal   bg_haka_meg_t6_a0
+.headersize 0x80B3D9C0 - 0x00EB90F0            ; ovl_Bg_Spot12_Saku
+.org 0x80B3DB8C
+    jal   bg_spot12_saku_t6_a0
+.headersize 0x80AC72D0 - 0x00E47110            ; ovl_Bg_Spot18_Basket
+.org 0x80AC8108
+    jal   bg_spot18_bsk_t7_s0
+.headersize 0x80979630 - 0x00D16CC0            ; ovl_Bg_Vb_Sima
+.org 0x80979AB0
+    jal   bg_vb_sima_t7_s6
+.headersize 0x808F3480 - 0x00C90C40            ; ovl_Bg_Ydan_Hasi
+.org 0x808F3A44
+    jal   bg_haka_meg_t6_a0
+.org 0x808F3B14
+    jal   bg_haka_zou_t6_s0
+.headersize 0x80B691D0 - 0x00EE48F0            ; ovl_Bg_Ydan_Sp
+.org 0x80B69DE0
+    jal   bg_ydan_sp_t6_s5
+.org 0x80B6A070
+    jal   bg_haka_meg_t6_a0
+.org 0x80B6A0DC
+    jal   bg_ydan_sp_t6_s3
+.org 0x80B6A460
+    jal   bg_ydan_sp_t7_s0
+.org 0x80B6A590
+    jal   bg_haka_zou_t6_s0
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
