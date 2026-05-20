@@ -1,0 +1,25 @@
+# ROMs and ROM-derived binaries — never commit
+*.z64
+*.n64
+*.v64
+*.ram
+*.bin
+rom/
+
+# OoT decomp — huge, builds locally from zeldaret/oot
+oot/
+
+# Patcher64+ — third-party tool, lives elsewhere
+Patcher64Plus-Tool/
+
+# Toolchain and helper scripts — build/use locally, not in repo
+tools/
+
+# Editor / misc
+*.swp
+*.swo
+.DS_Store
+
+# Allow these explicitly (override broad globs above):
+!src/*.asm
+!work/*.md
