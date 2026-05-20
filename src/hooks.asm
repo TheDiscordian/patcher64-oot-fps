@@ -276,6 +276,68 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 63: Fishing minigame timers — tick-mod ----
+; The fishing-pond minigame. Timer fields:
+;   stateAndTimer (++) - fish: timer that's AND'd; owner: talk state
+;   timerArray[4] (--) - via loop body sh @ 0x80a3bf80, Pattern E
+;     loop-body interception covers all 4 elements
+;   bumpTimer (--) - wall-bump cooldown
+;   lilyTimer (--) - lily-pad motion when fish near
+; All ==0/!=0 gates. Tick-mod via Pattern E.
+
+fish_state:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fish_state_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fish_state_st
+    nop
+    addiu t6, t6, -1
+fish_state_st:
+    jr    ra
+    sh    t6, 0x14C(s0)
+
+fish_tarr_loop:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fish_tarr_loop_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fish_tarr_loop_st
+    nop
+    addiu t8, t8, 1
+fish_tarr_loop_st:
+    jr    ra
+    sh    t8, 0x16A(v1)
+
+fish_bump:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fish_bump_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fish_bump_st
+    nop
+    addiu t2, t2, 1
+fish_bump_st:
+    jr    ra
+    sh    t2, 0x190(s0)
+
+fish_lily:
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fish_lily_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fish_lily_st
+    nop
+    addiu t3, t3, 1
+fish_lily_st:
+    jr    ra
+    sb    t3, 0x141(s0)
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +400,17 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; ---- Bucket 63 injections ----
+.headersize 0x80A34510 - 0x00DBE030            ; ovl_Fishing
+.org 0x80A3BF68
+    jal   fish_state
+.org 0x80A3BF80
+    jal   fish_tarr_loop
+.org 0x80A3BFC8
+    jal   fish_bump
+.org 0x80A3BFD8
+    jal   fish_lily
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
