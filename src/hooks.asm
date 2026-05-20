@@ -276,6 +276,68 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
+; ---- Bucket 25: Poe Sisters / field Poe (En_Po_Field) ----
+; Field/sister Poes. Heavy value-keyed checks on actionTimer (== 1, 11, 18,
+; 25, 26, 28, < 5, < 8, >= 19 — z_en_po_field.c:569-602). Pattern E tick-mod.
+; struct: actionTimer @ 0x186 (header /* 0x196 */); flameTimer @ 0x18A
+; (header /* 0x19A */). Both s16.
+
+po_action_s0_t6:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, pas0t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, pas0t6_store
+    nop
+    addiu t6, t6, 1
+pas0t6_store:
+    sh    t6, 0x186(s0)
+    jr    ra
+    lh    v0, 0x186(s0)
+
+po_action_s0_t0:                               ; t0 is the value, use t1 scratch
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, pas0t0_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, pas0t0_store
+    nop
+    addiu t0, t0, 1
+pas0t0_store:
+    sh    t0, 0x186(s0)
+    jr    ra
+    lh    v0, 0x186(s0)
+
+po_action_a2_t6:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, paa2t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, paa2t6_store
+    nop
+    addiu t6, t6, 1
+paa2t6_store:
+    sh    t6, 0x186(a2)
+    jr    ra
+    lh    v0, 0x186(a2)
+
+po_flame_s0_t6:
+    lui   t1, 0x8042
+    lbu   t1, -0x67CE(t1)
+    beqz  t1, pfs0t6_store
+    lui   t1, 0x801C
+    lbu   t1, 0x6FB4(t1)
+    bnez  t1, pfs0t6_store
+    nop
+    addiu t6, t6, 1
+pfs0t6_store:
+    sh    t6, 0x18A(s0)
+    jr    ra
+    lh    v0, 0x18A(s0)
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -338,6 +400,23 @@ sgs_store:
     jal   stun_wait_60_seed
 .org 0x8093AE40                                ; was `sb t0,758(s0)` in EnRd_Grab (case END)
     jal   stun10_grab_seed
+
+; Bucket 25 — ovl_En_Po_Field (Poe sisters / field Poe)
+.headersize 0x80AF7D60 - 0x00E75040
+.org 0x80AF8938                                ; sh t6,390(s0)
+    jal   po_action_s0_t6
+.org 0x80AF8D28                                ; sh t0,390(s0)
+    jal   po_action_s0_t0
+.org 0x80AF8F50                                ; sh t6,390(s0)
+    jal   po_action_s0_t6
+.org 0x80AF959C                                ; sh t6,390(a2)
+    jal   po_action_a2_t6
+.org 0x80AF9694                                ; sh t6,390(s0)
+    jal   po_action_s0_t6
+.org 0x80AF9B78                                ; sh t6,390(s0)
+    jal   po_action_s0_t6
+.org 0x80AFA008                                ; sh t6,394(s0) (flameTimer)
+    jal   po_flame_s0_t6
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
