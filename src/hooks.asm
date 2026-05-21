@@ -559,6 +559,54 @@ gils_call:
     j     0x80064280                           ; tail-call Math_ApproachF (preserves ra)
     nop
 
+; ---- Bucket 13 (v3 — Option B): Fire Temple stone elevator cosine smoothing ----
+; Bg_Hidan_Syoku's pos.y is driven by
+;   pos.y = cosf(timer * pi/140) * 540 + home.y
+; with `timer` decremented once per Update.
+;
+; v1 (tick-mod the decrement, skip 1 in 3 frames) caused render stutter + crash.
+; v2 (seed-mod timer + cos-divisor scale to push the cycle to 7 s wall-clock at
+; 30 fps) shook the same way as stock 30 fps — i.e. it didn't help, but also
+; left the platform's geometry consistent at the boundary.
+;
+; v3 keeps the original semantics — timer ticks every frame, cycle wall-clock
+; is the stock 30 fps duration — but smooths the per-render cos argument so
+; the chunky-step appearance shrinks. The patcher's frame_phase byte cycles
+; 0/1/2 every frame; at phase 1 or 2 we subtract `phase * (1/3)` from the
+; integer timer's float conversion. Net per-render advancement is uneven but
+; never larger than a one-tick step, vs. stock 30 fps where each frame's pos.y
+; can leap by the cosine derivative * 1 tick (~12 units near midpoint).
+;
+; 20 fps and phase-0 frames bypass the adjustment entirely (no behaviour
+; change). At 30 fps mode the adjustment runs every Update for this actor.
+;
+; Replaces `cvt.s.w f6, f4` in both func_8088F514 (ascent) and func_8088F5A0
+; (descent) — these are not overlay-relocated instructions, so the JAL
+; injection survives overlay loading. The displaced `sw a0, 0x18(sp)` in the
+; next slot runs as the JAL's delay slot (it has no register dependency on
+; f4/f6 and a0 is already valid at this point).
+hidan_syoku_smooth_cvt:
+    cvt.s.w f6, f4                             ; original cvt: f6 = (float)timer
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, hssc_ret                         ; 20 fps -> integer step, no smoothing
+    nop
+    lui   t0, 0x801C
+    lbu   t0, 0x6FB4(t0)                       ; frame_phase (0/1/2)
+    beqz  t0, hssc_ret                         ; phase 0 -> aligned with logic tick
+    nop
+    mtc1  t0, f8                               ; f8 (int bits) = phase
+    cvt.s.w f8, f8                             ; f8 = (float)phase  (1.0 or 2.0)
+    lui   t0, 0x3EAA
+    ori   t0, t0, 0xAAAB                       ; t0 = 0x3EAAAAAB = bits of 0.33333334f
+    mtc1  t0, f10
+    nop
+    mul.s f8, f8, f10                          ; f8 = phase * (1/3)
+    sub.s f6, f6, f8                           ; f6 = (float)timer - phase/3
+hssc_ret:
+    jr    ra
+    nop
+
 
 ; ---- Debug-save playerName init wrapper ----
 ; Retail NTSC 1.0's Sram_InitDebugSave assigns the Japanese-encoded name
@@ -706,6 +754,16 @@ sram_init_w_name:
     jal   goma_intro_lerp_scale
 .org 0x808A89C0                                ; subCamAt.y lerp (conditional)
     jal   goma_intro_lerp_scale
+
+; Bucket 13 v3 — ovl_Bg_Hidan_Syoku (Fire Temple stone elevator)
+; Smooth the cos argument across renders at 30 fps by replacing the int->float
+; timer conversion (`cvt.s.w f6, f4`) in ascent and descent with a JAL to a
+; hook that does the cvt plus a phase-based fractional offset.
+.headersize 0x808DD5A0 - 0x00C7AD90
+.org 0x808DD728                                ; was `cvt.s.w f6, f4` in func_8088F514 (ascent)
+    jal   hidan_syoku_smooth_cvt
+.org 0x808DD7B4                                ; was `cvt.s.w f6, f4` in func_8088F5A0 (descent)
+    jal   hidan_syoku_smooth_cvt
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
