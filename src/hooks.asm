@@ -276,33 +276,6 @@ sgs_store:
     jr    ra
     sb    t0, 0x2F6(s0)                        ; (delay slot) original store (10 or 15)
 
-; ---- Bucket 13: Fire Temple stone elevator (Bg_Hidan_Syoku) ----
-; The elevator's timer field gates a cosine-driven Y motion:
-;   pos.y = cosf(timer * pi/140) * 540 + home.y
-; Seed-mod would break this: scaling timer 140 -> 210 puts the cosf
-; argument outside the [0, pi] half-cycle the motion is designed for,
-; making the elevator overshoot or oscillate. tick-mod keeps timer in
-; its original [0, 140] range and just makes it tick at 2/3 rate at 30
-; fps, so wall-clock matches 20 fps and the cosine motion is correct.
-;
-; Three decrement sites all do `sh t6,346(a0)` (offset 0x15A — header
-; says 0x16A, -0x10 shift) followed by `lh v0,346(a0)` to reload for
-; downstream comparison. Shared hook handles all three.
-
-hidan_elev_tick:                               ; replaces sh t6,346(a0) at 3 sites
-    lui   t2, 0x8042
-    lbu   t2, -0x67CE(t2)                      ; fps_switch
-    beqz  t2, het_store                        ; 20 fps -> always decrement
-    lui   t2, 0x801C                           ; (delay slot)
-    lbu   t2, 0x6FB4(t2)                       ; global frame phase
-    bnez  t2, het_store                        ; phase 1/2 -> decrement
-    nop
-    addiu t6, t6, 1                            ; phase 0 -> undo decrement
-het_store:
-    sh    t6, 0x15A(a0)                        ; authoritative store
-    jr    ra
-    lh    v0, 0x15A(a0)                        ; (delay slot) reload v0 for downstream
-
 ; ---- Bucket 12: scale Boss_Goma (Gohma) patienceTimer seed by 1.5 in 30 fps ----
 ; this->patienceTimer = 200 at z_boss_goma.c lines 997 + 1424; decrement at
 ; line 1642 (raw `timer--`). When patienceTimer reaches 0 AND player is
@@ -733,15 +706,6 @@ sram_init_w_name:
     jal   goma_intro_lerp_scale
 .org 0x808A89C0                                ; subCamAt.y lerp (conditional)
     jal   goma_intro_lerp_scale
-
-; Bucket 13 — ovl_Bg_Hidan_Syoku (Fire Temple stone elevator)
-.headersize 0x808DD5A0 - 0x00C7AD90
-.org 0x808DD714                                ; was `sh t6,346(a0)` in func_8088F514 (ascent)
-    jal   hidan_elev_tick
-.org 0x808DD7A0                                ; was `sh t6,346(a0)` in func_8088F5A0 (descent)
-    jal   hidan_elev_tick
-.org 0x808DD824                                ; was `sh t6,346(a0)` in func_8088F62C (pause)
-    jal   hidan_elev_tick
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
