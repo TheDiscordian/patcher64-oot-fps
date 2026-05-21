@@ -559,76 +559,6 @@ gils_call:
     j     0x80064280                           ; tail-call Math_ApproachF (preserves ra)
     nop
 
-; ---- Bucket 13 (v2): Fire Temple stone elevator — seed-mod + cos-divisor scale ----
-; v1 of this fix used tick-mod and caused render stutter + a crash (see the
-; "B13: revert" commit). The elevator's pos.y comes from
-;   pos.y = cosf(timer * pi/140) * 540 + home.y
-; Skipping the timer decrement 1 in 3 frames at 30 fps freezes the cos
-; argument for that frame -> 20-fps-feel + state-machine corruption.
-;
-; v2 uses two cooperating fixes that produce smooth per-frame motion at the
-; correct wall-clock speed:
-;   1) Seed-mod each timer initialisation: 60 -> 90, 140 -> 210 at 30 fps.
-;      Timer now ticks every frame (no skip, no stutter), but reaches 0 in
-;      210 frames at 30 fps = 7 s -- matches 20 fps wall-clock duration.
-;   2) Cos-divisor scaling: replace the `lwc1 f8, -0x2680(r1)` that loads
-;      pi/140 with a hook that loads pi/140 then multiplies by 2/3 at 30 fps.
-;      f8 effectively becomes pi/210. The cos argument range stays [0, pi]
-;      because timer's range scaled in lockstep.
-;
-; Net effect: 20 fps and 30 fps both produce a half-cycle cosine over 7 s
-; with the full motion range. Both factors must be applied together --
-; the PR description's original concern ("seed-mod alone overshoots to 1.5pi")
-; was correct, but seed-mod COMBINED with cos-divisor scaling cancels out.
-
-elev_seed_60:                                   ; 0x808DD66C: sh r14=t6 (=60) to 0x15A(r4)
-    lui   t0, 0x8042
-    lbu   t0, -0x67CE(t0)                      ; fps_switch
-    beqz  t0, es60_store                       ; 20 fps -> keep 60
-    nop
-    li    t6, 90                               ; 30 fps -> 60 * 1.5 = 90
-es60_store:
-    jr    ra
-    sh    t6, 0x15A(a0)                        ; (delay slot) original store, base = a0 (=r4)
-
-elev_seed_140_a:                                ; 0x808DD6D8: sh r15=t7 (=140) to 0x15A(r24=t8)
-    lui   t0, 0x8042
-    lbu   t0, -0x67CE(t0)
-    beqz  t0, es140a_store
-    nop
-    li    t7, 210                              ; 30 fps -> 140 * 1.5 = 210
-es140a_store:
-    jr    ra
-    sh    t7, 0x15A(t8)                        ; (delay slot) original store, base = t8 (=r24)
-
-elev_seed_140_b:                                ; 0x808DD84C: sh r15=t7 (=140) to 0x15A(r4)
-    lui   t0, 0x8042
-    lbu   t0, -0x67CE(t0)
-    beqz  t0, es140b_store
-    nop
-    li    t7, 210
-es140b_store:
-    jr    ra
-    sh    t7, 0x15A(a0)                        ; (delay slot) original store, base = a0 (=r4)
-
-elev_cos_const:                                 ; shared hook for ascent + descent
-    ; Originally `lwc1 f8, -0x2680(at)` (or -0x267C; both addresses hold pi/140).
-    ; The `lui at, 0x808E` setting at=0x808E0000 ran before our JAL, so we
-    ; can replicate the load directly.
-    lwc1  f8, -0x2680(at)                      ; f8 = pi/140 (original load replicated)
-    lui   t0, 0x8042
-    lbu   t0, -0x67CE(t0)                      ; fps_switch
-    beqz  t0, ecc_done                         ; 20 fps -> keep pi/140
-    nop
-    lui   t0, 0x3F2A
-    ori   t0, t0, 0xAAAB                       ; 0.6666667f
-    mtc1  t0, f10
-    nop
-    mul.s f8, f8, f10                          ; 30 fps -> f8 *= 2/3  (= pi/210)
-ecc_done:
-    jr    ra
-    nop
-
 
 ; ---- Debug-save playerName init wrapper ----
 ; Retail NTSC 1.0's Sram_InitDebugSave assigns the Japanese-encoded name
@@ -776,23 +706,6 @@ sram_init_w_name:
     jal   goma_intro_lerp_scale
 .org 0x808A89C0                                ; subCamAt.y lerp (conditional)
     jal   goma_intro_lerp_scale
-
-; Bucket 13 v2 — ovl_Bg_Hidan_Syoku (Fire Temple stone elevator)
-; 3 seed-mod sites for the timer initialisations + 2 cos-divisor scale sites
-; (ascent + descent). No tick-mod, no timer-decrement hooks — timer ticks
-; every frame, but each frame's cos argument advances 2/3 as much, so motion
-; is smooth and wall-clock matches 20 fps.
-.headersize 0x808DD5A0 - 0x00C7AD90
-.org 0x808DD66C                                ; was `sh r14, 0x15A(r4)` — timer = 60 in func_8088F47C
-    jal   elev_seed_60
-.org 0x808DD6D8                                ; was `sh r15, 0x15A(r24)` — timer = 140 in func_8088F4B8
-    jal   elev_seed_140_a
-.org 0x808DD84C                                ; was `sh r15, 0x15A(r4)` — timer = 140 in func_8088F62C
-    jal   elev_seed_140_b
-.org 0x808DD724                                ; was `lwc1 f8, -0x2680(r1)` — pi/140 load in ascent
-    jal   elev_cos_const
-.org 0x808DD7B0                                ; was `lwc1 f8, -0x267C(r1)` — pi/140 load in descent
-    jal   elev_cos_const
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
