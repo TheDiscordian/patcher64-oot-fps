@@ -13,12 +13,20 @@
 # Usage:
 #   tools/ares-gdb.sh state                    # scene / transition / fps_switch / BG actor list
 #   tools/ares-gdb.sh elevator                 # live Bg_Hidan_Syoku state
+#   tools/ares-gdb.sh boot [rom_path]          # kill existing ares + launch with the ROM
+#                                              # default: work/oot-redux-30fps.z64
+#   tools/ares-gdb.sh wait-play [timeout_sec]  # block until ares is in Play state (default 60s)
+#   tools/ares-gdb.sh link-age <child|adult>   # set gSaveContext.save.linkAge
 #   tools/ares-gdb.sh warp <entr>              # trigger scene transition to entrance index
 #   tools/ares-gdb.sh tp <x> <y> <z>           # teleport player to given world coords (no room change)
 #   tools/ares-gdb.sh warp-room <entr> <x> <y> <z> <room>  # scene-warp + spawn-data patch
 #                                              # BPs Play_InitScene, patches scene's SpawnList/PlayerEntry
 #                                              # in RAM, continues. Pure GDB, no ROM patch.
 #   tools/ares-gdb.sh arena                    # convenience: warp into the Flare Dancer arena
+#   tools/ares-gdb.sh setup <child|adult> <target>  # combined: boot + wait-play + link-age + warp
+#                                              # <target> is a known location name: 'arena'
+#                                              # User must press A in Map Select once after boot
+#                                              # to advance from Map Select into Play state.
 #   tools/ares-gdb.sh read <addr> [n]          # raw word read(s)
 #   tools/ares-gdb.sh poke <addr> <word>       # raw word write
 #
@@ -136,6 +144,65 @@ arena)
     # Convenience: warp into the Flare Dancer arena (Fire Temple room 24,
     # near but not on the Bg_Hidan_Syoku platform).
     "$0" warp-room 0x165 -2700 2840 130 24
+    ;;
+boot)
+    rom=${1:-work/oot-redux-30fps.z64}
+    if [[ ! -f "$rom" ]]; then
+        # Try repo-relative
+        repo_rel="$(dirname "$0")/../$rom"
+        [[ -f "$repo_rel" ]] && rom="$repo_rel" || { echo "ROM not found: $rom"; exit 1; }
+    fi
+    pkill -9 -f "ares.*--system" 2>/dev/null
+    sleep 1
+    setsid bash -c "exec ares --system N64 '$rom'" < /dev/null > /tmp/ares.log 2>&1 &
+    disown
+    echo "ares launched with $rom (waiting for GDB stub...)"
+    for i in $(seq 1 20); do
+        if gdb --batch -ex "target remote $HOST" -ex 'detach' 2>&1 | grep -q "Remote target"; then
+            echo "GDB stub reachable after $i polls"
+            exit 0
+        fi
+        sleep 0.5
+    done
+    echo "WARNING: GDB stub did not become reachable. Is DebugServer enabled in ares?"
+    exit 1
+    ;;
+wait-play)
+    # Poll until gameState->main == Play_Main (0x8009CAC8). User must advance
+    # past Map Select first (one A press).
+    timeout=${1:-60}
+    deadline=$(($(date +%s) + timeout))
+    while (( $(date +%s) < deadline )); do
+        main_fn=$(g -ex "x/1xw 0x801C84A4" | tail -1 | awk '{print $2}')
+        if [[ "$main_fn" == "0x8009cac8" ]]; then
+            echo "in Play state"
+            exit 0
+        fi
+        sleep 0.5
+    done
+    echo "WARNING: timeout waiting for Play state (still in Map Select?)"
+    exit 1
+    ;;
+link-age)
+    [[ -z "$1" ]] && { echo "usage: link-age <child|adult>"; exit 1; }
+    case "$1" in
+        adult) age=0 ;;
+        child) age=1 ;;
+        *)     echo "age must be 'child' or 'adult'"; exit 1 ;;
+    esac
+    # gSaveContext.save.linkAge at 0x8011A5D0 + 0x04 = 0x8011A5D4
+    g -ex "set {int} 0x8011A5D4 = $age" >/dev/null
+    echo "linkAge = $age ($1)"
+    ;;
+setup)
+    [[ -z "$2" ]] && { echo "usage: setup <child|adult> <target>  e.g. setup child arena"; exit 1; }
+    age=$1
+    target=$2
+    "$0" boot
+    echo "Press A in Map Select to enter the default scene, then this script continues..."
+    "$0" wait-play 120
+    "$0" link-age "$age"
+    "$0" "$target"
     ;;
 read)
     [[ -z "$1" ]] && { echo "usage: read <addr_hex> [count]"; exit 1; }
