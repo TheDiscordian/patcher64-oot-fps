@@ -18,11 +18,13 @@
 #   tools/ares-gdb.sh wait-play [timeout_sec]  # block until ares is in Play state (default 60s)
 #   tools/ares-gdb.sh link-age <child|adult>   # set gSaveContext.save.linkAge
 #   tools/ares-gdb.sh warp <entr>              # trigger scene transition to entrance index
+#                                              # Works from MapSelect OR in-game.
 #   tools/ares-gdb.sh tp <x> <y> <z>           # teleport player to given world coords (no room change)
 #   tools/ares-gdb.sh warp-room <entr> <x> <y> <z> <room>  # scene-warp + spawn-data patch
 #                                              # BPs Play_InitScene, patches scene's SpawnList/PlayerEntry
 #                                              # in RAM, continues. Pure GDB, no ROM patch.
-#   tools/ares-gdb.sh arena                    # convenience: warp into the Flare Dancer arena
+#                                              # Works from MapSelect OR in-game.
+#   tools/ares-gdb.sh arena [adult|child]      # alias: warp-room into the Flare Dancer arena
 #   tools/ares-gdb.sh setup <child|adult> <target>  # fully automated: boot + skip Map Select +
 #                                              # <target> is a known location name (currently: arena).
 #                                              # User must press A in Map Select once after boot.
@@ -87,11 +89,37 @@ elevator)
     printf 'unk_168/timer     '; g -ex "x/2xh $(($head + 0x158))"   | tail -1
     ;;
 warp)
+    # Trigger a scene transition to <entr> from ANY state. State read +
+    # dispatch happen in ONE halted gdb session (race-free).
+    #   Play_Main           → write PlayState.nextEntranceIndex + transitionTrigger
+    #   MapSelect / boot    → call MapSelect_LoadGame via $pc (overlay reloc handled)
     [[ -z "$1" ]] && { echo "usage: warp <entrance_index_hex>  e.g. 0x165 (Fire Temple)"; exit 1; }
     entr=$1
-    g -ex "set {short} $NEXT_ENTR     = $entr" \
-      -ex "set {char}  $TRANS_TRIGGER = $TRANS_START" >/dev/null
-    echo "scene-warp triggered: nextEntranceIdx=$entr, transTrigger=START"
+    tmp=$(mktemp)
+    cat > "$tmp" <<EOF
+set architecture mips
+set endian big
+target remote $HOST
+set \$main_fn = *(unsigned int*)0x801C84A4
+if \$main_fn == 0x8009cac8
+  set {short} $NEXT_ENTR     = $entr
+  set {char}  $TRANS_TRIGGER = $TRANS_START
+else
+  set \$reloc_delta  = 0x80801BDC - \$main_fn
+  set \$load_game_rt = 0x808009E0 - \$reloc_delta
+  set \$a0 = 0x801C84A0
+  set \$a1 = $entr
+  set \$ra = \$pc
+  set \$pc = \$load_game_rt
+end
+printf "warp dispatched: entr=$entr  branch=%s  main_fn=%x\\n", (\$main_fn == 0x8009cac8 ? "Play" : "MapSelect"), \$main_fn
+detach
+EOF
+    gdb --batch --command="$tmp" 2>&1 \
+        | grep -vE '^(The target|warning:|0x[0-9a-f]+ in|\[Inferior)' \
+        | grep -vE 'determining executable|file.*command' \
+        | sed '/^$/d' || true
+    rm -f "$tmp"
     ;;
 tp)
     [[ -z "$3" ]] && { echo "usage: tp <x> <y> <z>  (player world.pos write — no room change)"; exit 1; }
@@ -105,18 +133,18 @@ tp)
     echo "player @ $player_head moved to ($1, $2, $3)"
     ;;
 warp-room)
-    # Pure GDB warp via in-RAM scene-spawn patching:
-    #   * BP at Play_InitScene (0x8009CDE8) — the spot where the scene's spawn
-    #     list / PlayerEntryList have been loaded into RAM but not yet read.
-    #   * Trigger a scene transition while paused.
-    #   * When BP fires, read PlayState.sceneSegment (+0xB0 in PlayState) to
-    #     find the freshly-loaded scene's RAM base.
-    #   * Patch SpawnList[0].room (scene_base+0x3B1) to the target room.
-    #   * Patch PlayerEntry[0].pos (scene_base+0x6A..0x6F) to the target XYZ.
-    #   * Delete BP, continue. Engine reads patched data → player spawns in
-    #     the requested room at the requested coords.
-    # The patch only lives in RAM as long as the scene is loaded, so this
-    # leaves no persistent state.
+    # Pure GDB warp via in-RAM scene-spawn patching. State read + dispatch +
+    # spawn patch all happen in ONE halted gdb session (race-free).
+    #   1. Read gameState->main. Branch on Play_Main vs not.
+    #   2. Trigger scene transition (Play: PlayState fields; MapSelect:
+    #      $pc jump to MapSelect_LoadGame with overlay-reloc handling).
+    #   3. BP at Play_InitScene (0x8009CDE8) — fires after the scene's
+    #      spawn list / PlayerEntryList are in RAM but before they're read.
+    #   4. Patch SpawnList[0].room (scene_base+0x3B1) and PlayerEntry[0].pos
+    #      (scene_base+0x6A..0x6F, three s16s).
+    #   5. Delete BP, continue. Engine reads patched data, player spawns at
+    #      the requested room + coords.
+    # Lives only in RAM for as long as the scene is loaded — no ROM patch.
     [[ -z "$5" ]] && { echo "usage: warp-room <entr_hex> <x> <y> <z> <room_dec>"; exit 1; }
     entr=$1 x=$2 y=$3 z=$4 room=$5
     tmp=$(mktemp)
@@ -124,9 +152,19 @@ warp-room)
 set architecture mips
 set endian big
 target remote $HOST
+set \$main_fn = *(unsigned int*)0x801C84A4
+if \$main_fn == 0x8009cac8
+  set {short} $NEXT_ENTR     = $entr
+  set {char}  $TRANS_TRIGGER = $TRANS_START
+else
+  set \$reloc_delta  = 0x80801BDC - \$main_fn
+  set \$load_game_rt = 0x808009E0 - \$reloc_delta
+  set \$a0 = 0x801C84A0
+  set \$a1 = $entr
+  set \$ra = \$pc
+  set \$pc = \$load_game_rt
+end
 break *0x8009CDE8
-set {short} $NEXT_ENTR     = $entr
-set {char}  $TRANS_TRIGGER = $TRANS_START
 continue
 set \$scene_base = *(unsigned int*)0x801C8550
 set {short} (\$scene_base + 0x6A) = $x
@@ -134,21 +172,20 @@ set {short} (\$scene_base + 0x6C) = $y
 set {short} (\$scene_base + 0x6E) = $z
 set {char}  (\$scene_base + 0x3B1) = $room
 delete breakpoints
+printf "warp-room: entr=$entr room=$room pos=($x,$y,$z) branch=%s\\n", (\$main_fn == 0x8009cac8 ? "Play" : "MapSelect")
 continue&
 detach
 EOF
-    gdb --batch --command="$tmp" 2>&1 | grep -vE '^The target|^warning: No exec|^0x[0-9a-f]+ in|determining executable|file.*command|Inferior.*detached|Cannot execute.*target is running|interrupt.*command' | sed '/^$/d'
+    gdb --batch --command="$tmp" 2>&1 \
+        | grep -vE '^(The target|warning:|0x[0-9a-f]+ in|\[Inferior)' \
+        | grep -vE 'determining executable|file.*command|Error in sourced command file|Cannot execute this command while the target is running' \
+        | sed '/^$/d' || true
     rm -f "$tmp"
-    echo "warp executed: entr=$entr room=$room pos=($x, $y, $z)"
     ;;
 arena)
-    # Warp into the Flare Dancer arena (Fire Temple room 24, near the
-    # Bg_Hidan_Syoku platform). Optional first arg: adult|child sets linkAge
-    # before the warp.
-    #
-    # Two flat GDB scripts (no GDB-side if/else — that was the bug). Bash
-    # reads gameState->main, picks the right script, runs it. Same form as
-    # the manual gdb invocations that have always worked.
+    # Thin alias: warp-room into the Flare Dancer arena (Fire Temple room 24).
+    # Optional first arg: adult|child sets linkAge first. All real work lives
+    # in warp-room — there is nothing special about this destination.
     age=${1:-}
     case "$age" in
         adult) g -ex "set {int} 0x8011A5D4 = 0" >/dev/null; echo "linkAge = 0 (adult)" ;;
@@ -156,59 +193,7 @@ arena)
         '') ;;
         *) echo "arena: optional age arg must be 'adult' or 'child'"; exit 1 ;;
     esac
-    main_fn=$(g -ex "x/1xw 0x801C84A4" | tail -1 | awk '{print $2}')
-    tmp=$(mktemp)
-    if [[ "$main_fn" == "0x8009cac8" ]]; then
-        # Already in Play_Main — trigger the transition via PlayState fields.
-        cat > "$tmp" <<EOF
-set architecture mips
-set endian big
-target remote $HOST
-set {short} 0x801DA2BA = 0x165
-set {char}  0x801DA2B5 = 20
-break *0x8009CDE8
-continue
-set \$scene_base = *(unsigned int*)0x801C8550
-set {short} (\$scene_base + 0x6A) = -2700
-set {short} (\$scene_base + 0x6C) = 2840
-set {short} (\$scene_base + 0x6E) = 130
-set {char}  (\$scene_base + 0x3B1) = 24
-delete breakpoints
-continue&
-detach
-EOF
-    else
-        # MapSelect (or boot intermediate) — call MapSelect_LoadGame via \$pc.
-        # MapSelect overlay relocates at runtime; compute delta from the
-        # runtime main fn vs static MapSelect_Main (0x80801BDC).
-        cat > "$tmp" <<EOF
-set architecture mips
-set endian big
-target remote $HOST
-set \$reloc_delta  = 0x80801BDC - *(unsigned int*)0x801C84A4
-set \$load_game_rt = 0x808009E0 - \$reloc_delta
-set \$a0 = 0x801C84A0
-set \$a1 = 0x165
-set \$ra = \$pc
-set \$pc = \$load_game_rt
-break *0x8009CDE8
-continue
-set \$scene_base = *(unsigned int*)0x801C8550
-set {short} (\$scene_base + 0x6A) = -2700
-set {short} (\$scene_base + 0x6C) = 2840
-set {short} (\$scene_base + 0x6E) = 130
-set {char}  (\$scene_base + 0x3B1) = 24
-delete breakpoints
-continue&
-detach
-EOF
-    fi
-    gdb --batch --command="$tmp" 2>&1 \
-        | grep -vE '^(The target|warning:|0x[0-9a-f]+ in|\[Inferior)' \
-        | grep -vE 'determining executable|file.*command|Error in sourced command file|Cannot execute this command while the target is running' \
-        | sed '/^$/d' || true
-    rm -f "$tmp"
-    echo "arena warp dispatched (state main_fn=$main_fn)"
+    "$0" warp-room 0x165 -2700 2840 130 24
     ;;
 boot)
     rom=${1:-work/oot-redux-30fps.z64}
