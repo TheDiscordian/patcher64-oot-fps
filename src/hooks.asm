@@ -559,6 +559,78 @@ gils_call:
     j     0x80064280                           ; tail-call Math_ApproachF (preserves ra)
     nop
 
+; ---- Bucket 13 (v10): tick-mod motion + phase-aware cos interpolation ----
+; Sidesteps func_8088F62C entirely. Smooth motion + 7 s wall-clock cycle.
+;
+; Approach:
+;   * Tick-mod the timer decrement in ascent + descent (Pattern E, like B7).
+;     Skip 1 in 3 frames → timer ticks 20/sec at 30 fps → 7 s motion cycle.
+;     (Stock 30 fps does 4.67 s, stock 20 fps does 7 s.)
+;   * At the cvt site, add a phase-dependent fractional offset to the cos
+;     input that exactly cancels the stutter from tick-mod. After both:
+;       phase 0 (skip frame): cos arg = (timer - 2/3) · π/140
+;       phase 1 (tick frame): cos arg = (timer - 1/3) · π/140
+;       phase 2 (tick frame): cos arg = (timer)       · π/140
+;     → cos arg decreases by exactly π/210 per RENDER frame.
+;     → uniform per-frame Δpos.y → no stutter.
+;   * Seed-mod the pause init (60 → 90) so the pause is 3 s wall-clock
+;     instead of 2 s, matching the 20 fps baseline. (func_8088F47C — non-leaf.)
+;
+; All 5 patch sites are in non-leaf functions (ascent, descent, pause-init).
+; func_8088F62C (the pause function itself) is NOT patched.
+
+elev_seed_60:                                   ; 0x808DD66C in func_8088F47C
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)
+    beqz  t0, es60_store
+    nop
+    li    t6, 90                               ; 30 fps → pause = 90 frames = 3 s
+es60_store:
+    jr    ra
+    sh    t6, 0x15A(a0)
+
+elev_tick_mod:                                  ; 0x808DD714 + 0x808DD7A0
+    ; Skip 1 in 3 frames at 30 fps. Original delay slot is `lh v0, 0x15A(a0)`
+    ; loading PRE-store v0; subsequent `mtc1 v0, f4` needs POST-store value,
+    ; so refresh v0 in jr-delay.
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)
+    beqz  t0, etm_store
+    lui   t0, 0x801C                           ; (delay slot)
+    lbu   t0, 0x6FB4(t0)                       ; frame_phase (0/1/2)
+    bnez  t0, etm_store                        ; phase != 0 → tick normally
+    nop
+    addiu t6, t6, 1                            ; phase 0 → undo decrement
+etm_store:
+    sh    t6, 0x15A(a0)
+    jr    ra
+    move  v0, t6                               ; (delay slot) v0 = current timer
+
+elev_cos_smooth:                                ; 0x808DD728 + 0x808DD7B4
+    ; cvt + (2-phase)/3 fractional subtract from float-timer at 30 fps.
+    ; t0/t1 scratch, f10/f12 scratch — all dead post-hook (f10 reset later by
+    ; `mtc1 at, f10` at 0x808DD740, f12 set by `mul.s f12, f6, f8`).
+    cvt.s.w f6, f4                              ; f6 = float(timer)
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)
+    beqz  t0, ecs_done                          ; 20 fps → no offset
+    nop
+    lui   t0, 0x801C
+    lbu   t0, 0x6FB4(t0)                        ; t0 = frame_phase
+    li    t1, 2
+    subu  t1, t1, t0                            ; t1 = 2 - phase  (∈ {0,1,2})
+    mtc1  t1, f10
+    cvt.s.w f10, f10                            ; f10 = float(2-phase)
+    lui   t0, 0x3EAA
+    ori   t0, t0, 0xAAAB                        ; 1/3 ≈ 0.33333334
+    mtc1  t0, f12
+    nop
+    mul.s f10, f10, f12                         ; f10 = (2-phase)/3
+    sub.s f6, f6, f10                           ; f6 -= offset
+ecs_done:
+    jr    ra
+    nop
+
 
 ; ---- Debug-save playerName init wrapper ----
 ; Retail NTSC 1.0's Sram_InitDebugSave assigns the Japanese-encoded name
@@ -707,6 +779,20 @@ sram_init_w_name:
 .org 0x808A89C0                                ; subCamAt.y lerp (conditional)
     jal   goma_intro_lerp_scale
 
+; Bucket 13 v6 — ovl_Bg_Hidan_Syoku (Fire Temple stone elevator)
+; Bucket 13 v10 — tick-mod motion + cos interpolation + pause seed-mod.
+; All 5 sites in non-leaf functions. NO patches in func_8088F62C.
+.headersize 0x808DD5A0 - 0x00C7AD90
+.org 0x808DD66C                                ; func_8088F47C — pause seed 60→90
+    jal   elev_seed_60
+.org 0x808DD714                                ; func_8088F514 — ascent decrement tick-mod
+    jal   elev_tick_mod
+.org 0x808DD7A0                                ; func_8088F5A0 — descent decrement tick-mod
+    jal   elev_tick_mod
+.org 0x808DD728                                ; func_8088F514 — ascent cvt + cos smooth
+    jal   elev_cos_smooth
+.org 0x808DD7B4                                ; func_8088F5A0 — descent cvt + cos smooth
+    jal   elev_cos_smooth
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
