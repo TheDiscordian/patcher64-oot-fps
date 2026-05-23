@@ -12,7 +12,6 @@
 #
 # Usage:
 #   tools/ares-gdb.sh state                    # scene / transition / fps_switch / BG actor list
-#   tools/ares-gdb.sh elevator                 # live Bg_Hidan_Syoku state
 #   tools/ares-gdb.sh boot [rom_path]          # kill existing ares + launch with the ROM
 #                                              # default: work/oot-redux-30fps.z64
 #   tools/ares-gdb.sh wait-play [timeout_sec]  # block until ares is in Play state (default 60s)
@@ -24,12 +23,8 @@
 #                                              # BPs Play_InitScene, patches scene's SpawnList/PlayerEntry
 #                                              # in RAM, continues. Pure GDB, no ROM patch.
 #                                              # Works from MapSelect OR in-game.
-#   tools/ares-gdb.sh arena [adult|child]      # alias: warp-room into the Flare Dancer arena
-#   tools/ares-gdb.sh setup <child|adult> <target>  # fully automated: boot + skip Map Select +
-#                                              # <target> is a known location name (currently: arena).
-#                                              # User must press A in Map Select once after boot.
-#                                              # Fully-automated MapSelect bypass was tried but
-#                                              # froze the engine — see setup) implementation.
+#   tools/ares-gdb.sh preset <name> [adult|child]  # named-location alias for warp-room
+#                                              # known presets: arena (Flare Dancer, Fire Temple)
 #   tools/ares-gdb.sh read <addr> [n]          # raw word read(s)
 #   tools/ares-gdb.sh poke <addr> <word>       # raw word write
 #
@@ -73,20 +68,6 @@ state)
     printf 'fps_switch      '; g -ex "x/1xb $FPS_SWITCH"   | tail -1
     printf 'BG actor head   '; g -ex "x/1xw $BG_LIST_HEAD" | tail -1
     printf 'BG actor count  '; g -ex "x/1xw $BG_LIST_LEN"  | tail -1
-    ;;
-elevator)
-    head=$(g -ex "x/1xw $BG_LIST_HEAD" | tail -1 | awk '{print $2}')
-    if [[ "$head" == "0x00000000" || -z "$head" ]]; then
-        echo "no BG actors loaded — are you in a scene?"; exit 1
-    fi
-    echo "BgHidanSyoku candidate @ $head"
-    # Actor struct: id at +0, world.pos at +0x24, actionFunc at +0x154 (this build's offset),
-    # unk_168 at +0x158, timer at +0x15A
-    printf 'id/category/room  '; g -ex "x/1xw $head"                | tail -1
-    printf 'world.pos (xyz)   '; g -ex "x/3fw $(($head + 0x24))"    | tail -1
-    printf 'home.pos  (xyz)   '; g -ex "x/3fw $(($head + 0x08))"    | tail -1
-    printf 'actionFunc        '; g -ex "x/1xw $(($head + 0x154))"   | tail -1
-    printf 'unk_168/timer     '; g -ex "x/2xh $(($head + 0x158))"   | tail -1
     ;;
 warp)
     # Trigger a scene transition to <entr> from ANY state. State read +
@@ -182,19 +163,6 @@ EOF
         | sed '/^$/d' || true
     rm -f "$tmp"
     ;;
-arena)
-    # Thin alias: warp-room into the Flare Dancer arena (Fire Temple room 24).
-    # Optional first arg: adult|child sets linkAge first. All real work lives
-    # in warp-room — there is nothing special about this destination.
-    age=${1:-}
-    case "$age" in
-        adult) g -ex "set {int} 0x8011A5D4 = 0" >/dev/null; echo "linkAge = 0 (adult)" ;;
-        child) g -ex "set {int} 0x8011A5D4 = 1" >/dev/null; echo "linkAge = 1 (child)" ;;
-        '') ;;
-        *) echo "arena: optional age arg must be 'adult' or 'child'"; exit 1 ;;
-    esac
-    "$0" warp-room 0x165 -2700 2840 130 24
-    ;;
 boot)
     rom=${1:-work/oot-redux-30fps.z64}
     if [[ ! -f "$rom" ]]; then
@@ -244,71 +212,23 @@ link-age)
     g -ex "set {int} 0x8011A5D4 = $age" >/dev/null
     echo "linkAge = $age ($1)"
     ;;
-setup)
-    # Fully automated: boot ROM, wait for MapSelect to be active, call
-    # MapSelect_LoadGame via $pc with proper args + relocation. Engine
-    # handles all of its own state-transition setup. No user input required.
-    #
-    # MapSelect is an overlay that relocates at runtime — its static map
-    # address (0x80801BDC for MapSelect_Main, 0x808009E0 for MapSelect_LoadGame)
-    # does NOT match the runtime address. We read MapSelect_Main's actual
-    # runtime address from gameState->main, compute the relocation delta,
-    # and apply it to MapSelect_LoadGame before the $pc jump.
-    #
-    # Implementation note: wait loop uses `until` over a single state-read
-    # command (no bash for-loop spawning many gdb invocations). All the
-    # writes + BP + patch + continue happen in ONE gdb --batch invocation.
-    [[ -z "$2" ]] && { echo "usage: setup <child|adult> <target>  e.g. setup child arena"; exit 1; }
-    age=$1
-    target=$2
+preset)
+    # Named-location aliases for warp-room. Each preset is just (entrance,
+    # xyz, room) — add new ones to the case below as the project needs them.
+    # Optional second arg: adult|child sets linkAge before warping.
+    [[ -z "$1" ]] && { echo "usage: preset <name> [adult|child]   known: arena"; exit 1; }
+    name=$1; age=${2:-}
+    case "$name" in
+        arena) entr=0x165; px=-2700; py=2840; pz=130; room=24 ;;  # Fire Temple, Flare Dancer room
+        *)     echo "unknown preset: $name   known: arena"; exit 1 ;;
+    esac
     case "$age" in
-        adult) age_val=0 ;;
-        child) age_val=1 ;;
-        *)     echo "age must be 'child' or 'adult'"; exit 1 ;;
+        adult) g -ex "set {int} 0x8011A5D4 = 0" >/dev/null; echo "linkAge = 0 (adult)" ;;
+        child) g -ex "set {int} 0x8011A5D4 = 1" >/dev/null; echo "linkAge = 1 (child)" ;;
+        '') ;;
+        *) echo "age must be 'adult' or 'child'"; exit 1 ;;
     esac
-    case "$target" in
-        arena) entr=0x165; rx=-2700; ry=2840; rz=130; room=24 ;;
-        *)     echo "unknown target: $target  (known: arena)"; exit 1 ;;
-    esac
-
-    "$0" boot >/dev/null || exit 1
-
-    # Block until gameState->main is something other than zero (early boot)
-    # or Play_Main (in case we somehow re-enter). One read per second.
-    echo "waiting for MapSelect to become active..."
-    until
-        fn=$(g -ex "x/1xw 0x801C84A4" 2>/dev/null | tail -1 | awk '{print $2}')
-        [[ "$fn" != "0x00000000" && "$fn" != "0x8009cac8" && -n "$fn" ]]
-    do sleep 1; done
-    echo "MapSelect active (main fn $fn)"
-
-    tmp=$(mktemp)
-    cat > "$tmp" <<EOF
-set architecture mips
-set endian big
-target remote $HOST
-set \$main_runtime = *(unsigned int*)0x801C84A4
-set \$reloc_delta  = 0x80801BDC - \$main_runtime
-set \$load_game_rt = 0x808009E0 - \$reloc_delta
-set {int} 0x8011A5D4 = $age_val
-set \$a0 = 0x801C84A0
-set \$a1 = $entr
-set \$ra = \$pc
-set \$pc = \$load_game_rt
-break *0x8009CDE8
-continue
-set \$scene_base = *(unsigned int*)0x801C8550
-set {short} (\$scene_base + 0x6A) = $rx
-set {short} (\$scene_base + 0x6C) = $ry
-set {short} (\$scene_base + 0x6E) = $rz
-set {char}  (\$scene_base + 0x3B1) = $room
-delete breakpoints
-continue&
-detach
-EOF
-    gdb --batch --command="$tmp" 2>&1 | grep -vE 'GDB is unable|GDB may be|This means|This problem|However, if|search farther|set heuristic|determining executable|file.*command|Inferior.*detached|Cannot execute.*target is running|interrupt.*command|warning: No exec|^The target|^and thus|^and then|^the frames|^stack pointer|^from 0x|^function' | sed '/^$/d'
-    rm -f "$tmp"
-    echo "setup complete: age=$age target=$target  →  entr=$entr room=$room pos=($rx, $ry, $rz)"
+    "$0" warp-room $entr $px $py $pz $room
     ;;
 read)
     [[ -z "$1" ]] && { echo "usage: read <addr_hex> [count]"; exit 1; }
