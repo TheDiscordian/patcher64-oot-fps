@@ -23,10 +23,11 @@
 #                                              # BPs Play_InitScene, patches scene's SpawnList/PlayerEntry
 #                                              # in RAM, continues. Pure GDB, no ROM patch.
 #   tools/ares-gdb.sh arena                    # convenience: warp into the Flare Dancer arena
-#   tools/ares-gdb.sh setup <child|adult> <target>  # combined: boot + wait-play + link-age + warp
-#                                              # <target> is a known location name: 'arena'
-#                                              # User must press A in Map Select once after boot
-#                                              # to advance from Map Select into Play state.
+#   tools/ares-gdb.sh setup <child|adult> <target>  # fully automated: boot + skip Map Select +
+#                                              # <target> is a known location name (currently: arena).
+#                                              # User must press A in Map Select once after boot.
+#                                              # Fully-automated MapSelect bypass was tried but
+#                                              # froze the engine — see setup) implementation.
 #   tools/ares-gdb.sh read <addr> [n]          # raw word read(s)
 #   tools/ares-gdb.sh poke <addr> <word>       # raw word write
 #
@@ -152,7 +153,7 @@ boot)
         repo_rel="$(dirname "$0")/../$rom"
         [[ -f "$repo_rel" ]] && rom="$repo_rel" || { echo "ROM not found: $rom"; exit 1; }
     fi
-    pkill -9 -f "ares.*--system" 2>/dev/null
+    pkill -9 -f "ares.*--system" 2>/dev/null || true
     sleep 1
     setsid bash -c "exec ares --system N64 '$rom'" < /dev/null > /tmp/ares.log 2>&1 &
     disown
@@ -195,12 +196,22 @@ link-age)
     echo "linkAge = $age ($1)"
     ;;
 setup)
+    # Boot ROM + wait for Play state + link-age + warp.
+    # NOTE: user must press A once in Map Select to advance into Play state.
+    # A prior version tried to hijack MapSelect's GameState transition entirely
+    # (write state->running=0 + state->init=Play_Init + state->size=PlayState).
+    # Engine processed the transition (gameState->main became Play_Main, scene
+    # spawn patch landed, room 24 loaded, player actor allocated at arena coords)
+    # but the game thread blocked on frame ~2 — PC oscillating in the kernel idle
+    # region. Skipping MapSelect skips some thread / audio / HUD setup the engine
+    # expects. Need a different bypass mechanism (e.g. calling MapSelect_LoadGame
+    # via $pc with proper args, or simulating an A press into MapSelect's input).
     [[ -z "$2" ]] && { echo "usage: setup <child|adult> <target>  e.g. setup child arena"; exit 1; }
     age=$1
     target=$2
-    "$0" boot
-    echo "Press A in Map Select to enter the default scene, then this script continues..."
-    "$0" wait-play 120
+    "$0" boot >/dev/null || exit 1
+    echo "ares booted. Press A in Map Select to advance into Play state — script continues when it sees Play_Main."
+    "$0" wait-play 120 || exit 1
     "$0" link-age "$age"
     "$0" "$target"
     ;;
