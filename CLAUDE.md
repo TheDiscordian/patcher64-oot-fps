@@ -255,8 +255,7 @@ Buckets 4 & 5. See Status above.
     central pillar with the cycling stone platforms over the lava."
   - ❌ "Enter room 10" → ✅ "Enter the corridor with the moving fire walls
     and rolling boulders."
-  - ❌ "Test in room 24" → ✅ "Test in the Flare Dancer arena (the room with
-    the fire curtain that snaps shut when you enter)."
+  - ❌ "Test in room 24" → ✅ "Test in the Flare Dancer arena."
   Decomp-side coordinates (X, Y, Z), key-flag numbers, and actor-table IDs
   are fine when they identify a specific door / load-zone / spawn (those are
   the unambiguous breakdown of "which door, exactly") — the room number that
