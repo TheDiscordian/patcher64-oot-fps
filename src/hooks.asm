@@ -596,21 +596,31 @@ gils_call:
 ; 20 fps mode bypasses entirely with a tail-call to the real cosf, so the
 ; original behaviour is preserved when fps_switch == 0.
 hidan_syoku_linear_cos:
-    ; In:  f12 = timer * (pi/140)
-    ; Out: f0  = cos approximation (linear at 30 fps, true cos at 20 fps)
+    ; DIAGNOSTIC v5: at 30 fps return cos = 0 unconditionally. With cos = 0,
+    ; pos.y = 0 * 540 + home.y = home.y for every frame — the platform stays
+    ; perfectly still at its rest position. State machine still runs (timer
+    ; decrements, action funcs transition), but world.pos.y never moves.
+    ;
+    ; This is a diagnostic, not a fix. Two possible outcomes when the user
+    ; tests:
+    ;   (a) Platform appears frozen at mid-height AND no shake -> the shake
+    ;       was in pos.y motion, and v1-v4's failure to fix it means
+    ;       something else (besides cos / linear math) is writing to pos.y.
+    ;       Next hunt: find that writer.
+    ;   (b) Platform appears frozen at mid-height AND still shakes -> the
+    ;       shake is independent of pos.y. The cos math has been a red
+    ;       herring across v1-v4. Look at scale, rotation, draw matrix, or
+    ;       pipeline-level effects instead.
+    ;
+    ; Either outcome is more diagnostic information than the previous four
+    ; revisions have produced.
     lui   t0, 0x8042
     lbu   t0, -0x67CE(t0)                      ; fps_switch
-    beqz  t0, hslc_real_cos                    ; 20 fps -> real cosine
+    beqz  t0, hslc_real_cos                    ; 20 fps -> real cosine (unchanged)
     nop
-    ; 30 fps: compute f0 = 1.0 - f12 * (2/pi)
-    lui   t0, 0x3F22
-    ori   t0, t0, 0xF983                       ; t0 = 0x3F22F983 = bits of 0.6366198f (2/pi)
-    mtc1  t0, f4
-    lui   t0, 0x3F80                           ; t0 = 0x3F800000 = bits of 1.0f
-    mtc1  t0, f6
-    mul.s f4, f12, f4                          ; f4 = f12 * (2/pi)
+    mtc1  zero, f0                             ; 30 fps -> f0 = 0.0f
     jr    ra
-    sub.s f0, f6, f4                           ; (jr delay slot) f0 = 1.0 - f12 * (2/pi)
+    nop
 hslc_real_cos:
     j     0x800D2CD0                           ; tail-call cosf (preserves ra)
     nop
