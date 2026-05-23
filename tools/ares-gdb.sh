@@ -196,24 +196,74 @@ link-age)
     echo "linkAge = $age ($1)"
     ;;
 setup)
-    # Boot ROM + wait for Play state + link-age + warp.
-    # NOTE: user must press A once in Map Select to advance into Play state.
-    # A prior version tried to hijack MapSelect's GameState transition entirely
-    # (write state->running=0 + state->init=Play_Init + state->size=PlayState).
-    # Engine processed the transition (gameState->main became Play_Main, scene
-    # spawn patch landed, room 24 loaded, player actor allocated at arena coords)
-    # but the game thread blocked on frame ~2 — PC oscillating in the kernel idle
-    # region. Skipping MapSelect skips some thread / audio / HUD setup the engine
-    # expects. Need a different bypass mechanism (e.g. calling MapSelect_LoadGame
-    # via $pc with proper args, or simulating an A press into MapSelect's input).
+    # Fully automated: boot ROM, wait for MapSelect, call MapSelect_LoadGame
+    # via $pc with proper args + relocation. Engine handles all of its own
+    # state-transition setup. No user input required.
+    #
+    # MapSelect is an overlay that relocates at runtime — its static map
+    # address (0x80801BDC for MapSelect_Main, 0x808009E0 for MapSelect_LoadGame)
+    # does NOT match the runtime address. We read MapSelect_Main's actual
+    # runtime address from gameState->main, compute the relocation delta, and
+    # apply it to MapSelect_LoadGame before the $pc jump.
     [[ -z "$2" ]] && { echo "usage: setup <child|adult> <target>  e.g. setup child arena"; exit 1; }
     age=$1
     target=$2
+    case "$age" in
+        adult) age_val=0 ;;
+        child) age_val=1 ;;
+        *)     echo "age must be 'child' or 'adult'"; exit 1 ;;
+    esac
+    case "$target" in
+        arena) entr=0x165; rx=-2700; ry=2840; rz=130; room=24 ;;
+        *)     echo "unknown target: $target  (known: arena)"; exit 1 ;;
+    esac
+
     "$0" boot >/dev/null || exit 1
-    echo "ares booted. Press A in Map Select to advance into Play state — script continues when it sees Play_Main."
-    "$0" wait-play 120 || exit 1
-    "$0" link-age "$age"
-    "$0" "$target"
+
+    # Wait for MapSelect's main fn to settle. Reject Play_Main (0x8009CAC8)
+    # and the zero/junk values during early boot. Two consecutive matching
+    # reads = stable state.
+    echo "waiting for MapSelect to settle..."
+    last_fn=
+    for i in $(seq 1 60); do
+        main_fn=$(g -ex "x/1xw 0x801C84A4" 2>/dev/null | tail -1 | awk '{print $2}')
+        if [[ "$main_fn" != "0x00000000" && "$main_fn" != "0x8009cac8" && -n "$main_fn" ]]; then
+            if [[ "$main_fn" == "$last_fn" ]]; then
+                echo "MapSelect active (main fn $main_fn after $i polls)"
+                break
+            fi
+            last_fn=$main_fn
+        fi
+        sleep 0.5
+    done
+
+    tmp=$(mktemp)
+    cat > "$tmp" <<EOF
+set architecture mips
+set endian big
+target remote $HOST
+set \$main_runtime  = *(unsigned int*)0x801C84A4
+set \$reloc_delta   = 0x80801BDC - \$main_runtime
+set \$load_game_rt  = 0x808009E0 - \$reloc_delta
+set {int} 0x8011A5D4 = $age_val
+set \$a0 = 0x801C84A0
+set \$a1 = $entr
+set \$ra = \$pc
+set \$pc = \$load_game_rt
+break *0x8009CDE8
+continue
+set \$scene_base = *(unsigned int*)0x801C8550
+set {short} (\$scene_base + 0x6A) = $rx
+set {short} (\$scene_base + 0x6C) = $ry
+set {short} (\$scene_base + 0x6E) = $rz
+set {char}  (\$scene_base + 0x3B1) = $room
+delete breakpoints
+continue&
+detach
+EOF
+    gdb --batch --command="$tmp" 2>&1 | grep -vE 'GDB is unable|GDB may be|This means|This problem|However, if|search farther|set heuristic|determining executable|file.*command|Inferior.*detached|Cannot execute.*target is running|interrupt.*command|warning: No exec|^The target|^and thus|^and then|^the frames|^stack pointer|^from 0x|^function' | sed '/^$/d'
+    rm -f "$tmp"
+    echo "setup complete: age=$age target=$target  →  entr=$entr room=$room pos=($rx, $ry, $rz)"
     ;;
 read)
     [[ -z "$1" ]] && { echo "usage: read <addr_hex> [count]"; exit 1; }
