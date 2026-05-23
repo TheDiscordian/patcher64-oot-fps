@@ -15,8 +15,9 @@
 #   tools/ares-gdb.sh elevator                 # live Bg_Hidan_Syoku state
 #   tools/ares-gdb.sh warp <entr>              # trigger scene transition to entrance index
 #   tools/ares-gdb.sh tp <x> <y> <z>           # teleport player to given world coords (no room change)
-#   tools/ares-gdb.sh warp-room <entr> <x> <y> <z> <room>  # scene-warp + respawn[DOWN] override
-#                                              # spawns player at given coords/room via void-out machinery
+#   tools/ares-gdb.sh warp-room <entr> <x> <y> <z> <room>  # scene-warp + spawn-data patch
+#                                              # BPs Play_InitScene, patches scene's SpawnList/PlayerEntry
+#                                              # in RAM, continues. Pure GDB, no ROM patch.
 #   tools/ares-gdb.sh arena                    # convenience: warp into the Flare Dancer arena
 #   tools/ares-gdb.sh read <addr> [n]          # raw word read(s)
 #   tools/ares-gdb.sh poke <addr> <word>       # raw word write
