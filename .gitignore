@@ -13,7 +13,8 @@ oot/
 Patcher64Plus-Tool/
 
 # Toolchain and helper scripts — build/use locally, not in repo
-tools/
+# (use tools/* not tools/ so a leading-! override below can re-include specific files)
+tools/*
 
 # Editor / misc
 *.swp
@@ -23,3 +24,4 @@ tools/
 # Allow these explicitly (override broad globs above):
 !src/*.asm
 !work/*.md
+!tools/decomp.py

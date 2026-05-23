@@ -47,6 +47,37 @@ armips notes: `.headersize` = `RAM - ROM` offset (positive for N64). armips
 rebuilds the output from the clean base each run, so deleting a hook from
 `hooks.asm` fully reverts it — no stale bytes.
 
+## Decomp-assisted research — DO THIS FIRST for any new actor
+
+The matched decomp ELF is built in-tree (`oot/build/ntsc-1.0/...`). It resolves
+every function used in this repo against vanilla OoT NTSC 1.0; Patcher64+ Redux
+overlays are byte-identical, so overlay addresses map 1:1. Before writing a
+single line of asm for a new actor, run these queries — they short-circuit the
+manual disasm-browsing loop that ate PRs like #7:
+
+```
+python3 tools/decomp.py addr 0x808DD728       # RAM → function + source file
+python3 tools/decomp.py sym  func_8088F514    # symbol → address + source
+python3 tools/decomp.py actor BgHidanSyoku    # all funcs + struct + source path
+python3 tools/decomp.py counters BgHidanSyoku # every raw frame counter in the actor
+python3 tools/decomp.py xref Math_StepToF     # every caller in the matched ELF
+```
+
+`counters` is the spine of the workflow: it lists every `this->field--`,
+`++`, `+= 1`, `Math_StepToF/SmoothStepToF/ApproachF` in the actor's source. A
+30 fps hook is almost always one of those. Once you have the list, classify
+each field against `work/FIX_PATTERNS.md` (seed-mod vs tick-mod vs step-scale)
+BEFORE writing asm — that's the call PR #7 got wrong three times in a row.
+
+`actor` also prints the struct from the decomp `.h`. **Verify offsets against
+the matched ELF before relying on them** — header comments target a different
+version and are commonly shifted (e.g. `EnBom.timer` at 0x1E8, header says 0x1F8).
+
+Limitations: the matched build emits `.mdebug`, not DWARF, so source line numbers
+aren't available — function-level resolution is what you get. A handful of
+code-segment functions are patcher-modified in Redux; spot-check before relying
+on those (overlays are safe — byte-identical).
+
 ## Confirmed addresses (NTSC-U 1.0)
 ```
 payload RAM base 0x80400000  ->  ROM 0x03680000
