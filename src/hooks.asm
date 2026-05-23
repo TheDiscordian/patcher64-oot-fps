@@ -559,70 +559,76 @@ gils_call:
     j     0x80064280                           ; tail-call Math_ApproachF (preserves ra)
     nop
 
-; ---- Bucket 13 (v4): Fire Temple stone elevator — linear motion replacement ----
-; Stock Bg_Hidan_Syoku motion: pos.y = cosf(timer * pi/140) * 540 + home.y
-; with `timer` decremented once per Update.
+; ---- Bucket 13 (v10): tick-mod motion + phase-aware cos interpolation ----
+; Sidesteps func_8088F62C entirely. Smooth motion + 7 s wall-clock cycle.
 ;
-; v1 (tick-mod the decrement, skip 1 in 3 frames) caused render stutter + crash.
-; v2 (seed-mod timer + cos-divisor scale, cycle 7 s wall-clock) shook the same
-; as stock 30 fps.
-; v3 (cos arg fractional offset per frame_phase) also showed no perceptible
-; change vs stock 30 fps — and the game still crashed at the top of the cycle.
+; Approach:
+;   * Tick-mod the timer decrement in ascent + descent (Pattern E, like B7).
+;     Skip 1 in 3 frames → timer ticks 20/sec at 30 fps → 7 s motion cycle.
+;     (Stock 30 fps does 4.67 s, stock 20 fps does 7 s.)
+;   * At the cvt site, add a phase-dependent fractional offset to the cos
+;     input that exactly cancels the stutter from tick-mod. After both:
+;       phase 0 (skip frame): cos arg = (timer - 2/3) · π/140
+;       phase 1 (tick frame): cos arg = (timer - 1/3) · π/140
+;       phase 2 (tick frame): cos arg = (timer)       · π/140
+;     → cos arg decreases by exactly π/210 per RENDER frame.
+;     → uniform per-frame Δpos.y → no stutter.
+;   * Seed-mod the pause init (60 → 90) so the pause is 3 s wall-clock
+;     instead of 2 s, matching the 20 fps baseline. (func_8088F47C — non-leaf.)
 ;
-; v4 takes a different angle entirely: replace the cosine with a LINEAR ramp.
-; Bg_Hidan_Sima (the room 1 lava platforms, same dungeon, same DYNA_TRANSFORM_POS
-; flag) uses Math_StepToF for vertical motion and works fine at 30 fps. The
-; Syoku elevator is the only Fire Temple platform that drives pos.y through
-; cosf — every previous fix attempt has assumed the cos math is fine and tried
-; to manipulate the timer or its float conversion. None worked.
-;
-; Linear motion that matches the endpoints + midpoint of the cosine cycle:
-;   f0 = 1.0f - (timer * (pi/140)) * (2/pi)
-;      = 1.0f - timer * (1/70)
-; At timer=0   -> f0 =  1 (matches cos(0) = 1, top of ascent)
-; At timer=70  -> f0 =  0 (matches cos(pi/2) = 0, midpoint)
-; At timer=140 -> f0 = -1 (matches cos(pi) = -1, bottom of cycle)
-;
-; Per-tick pos.y delta is then constant (540 * 1/70 = ~7.71 units). The motion
-; is constant-velocity instead of ease-in/ease-out, sacrificing the "soft start
-; and stop" feel for predictable monotonic per-render advancement. Endpoints,
-; range, and cycle duration are unchanged.
-;
-; Replaces `jal cosf` in both func_8088F514 (ascent, 0x808DD734) and func_8088F5A0
-; (descent, 0x808DD7C0). The jal is overlay-relocated normally; armips picks
-; up the new target via the symbol table at assemble time. The displaced
-; delay-slot `nop` after the original jal is harmless.
-;
-; 20 fps mode bypasses entirely with a tail-call to the real cosf, so the
-; original behaviour is preserved when fps_switch == 0.
-hidan_syoku_linear_cos:
-    ; DIAGNOSTIC v5: at 30 fps return cos = 0 unconditionally. With cos = 0,
-    ; pos.y = 0 * 540 + home.y = home.y for every frame — the platform stays
-    ; perfectly still at its rest position. State machine still runs (timer
-    ; decrements, action funcs transition), but world.pos.y never moves.
-    ;
-    ; This is a diagnostic, not a fix. Two possible outcomes when the user
-    ; tests:
-    ;   (a) Platform appears frozen at mid-height AND no shake -> the shake
-    ;       was in pos.y motion, and v1-v4's failure to fix it means
-    ;       something else (besides cos / linear math) is writing to pos.y.
-    ;       Next hunt: find that writer.
-    ;   (b) Platform appears frozen at mid-height AND still shakes -> the
-    ;       shake is independent of pos.y. The cos math has been a red
-    ;       herring across v1-v4. Look at scale, rotation, draw matrix, or
-    ;       pipeline-level effects instead.
-    ;
-    ; Either outcome is more diagnostic information than the previous four
-    ; revisions have produced.
+; All 5 patch sites are in non-leaf functions (ascent, descent, pause-init).
+; func_8088F62C (the pause function itself) is NOT patched.
+
+elev_seed_60:                                   ; 0x808DD66C in func_8088F47C
     lui   t0, 0x8042
-    lbu   t0, -0x67CE(t0)                      ; fps_switch
-    beqz  t0, hslc_real_cos                    ; 20 fps -> real cosine (unchanged)
+    lbu   t0, -0x67CE(t0)
+    beqz  t0, es60_store
     nop
-    mtc1  zero, f0                             ; 30 fps -> f0 = 0.0f
+    li    t6, 90                               ; 30 fps → pause = 90 frames = 3 s
+es60_store:
     jr    ra
+    sh    t6, 0x15A(a0)
+
+elev_tick_mod:                                  ; 0x808DD714 + 0x808DD7A0
+    ; Skip 1 in 3 frames at 30 fps. Original delay slot is `lh v0, 0x15A(a0)`
+    ; loading PRE-store v0; subsequent `mtc1 v0, f4` needs POST-store value,
+    ; so refresh v0 in jr-delay.
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)
+    beqz  t0, etm_store
+    lui   t0, 0x801C                           ; (delay slot)
+    lbu   t0, 0x6FB4(t0)                       ; frame_phase (0/1/2)
+    bnez  t0, etm_store                        ; phase != 0 → tick normally
     nop
-hslc_real_cos:
-    j     0x800D2CD0                           ; tail-call cosf (preserves ra)
+    addiu t6, t6, 1                            ; phase 0 → undo decrement
+etm_store:
+    sh    t6, 0x15A(a0)
+    jr    ra
+    move  v0, t6                               ; (delay slot) v0 = current timer
+
+elev_cos_smooth:                                ; 0x808DD728 + 0x808DD7B4
+    ; cvt + (2-phase)/3 fractional subtract from float-timer at 30 fps.
+    ; t0/t1 scratch, f10/f12 scratch — all dead post-hook (f10 reset later by
+    ; `mtc1 at, f10` at 0x808DD740, f12 set by `mul.s f12, f6, f8`).
+    cvt.s.w f6, f4                              ; f6 = float(timer)
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)
+    beqz  t0, ecs_done                          ; 20 fps → no offset
+    nop
+    lui   t0, 0x801C
+    lbu   t0, 0x6FB4(t0)                        ; t0 = frame_phase
+    li    t1, 2
+    subu  t1, t1, t0                            ; t1 = 2 - phase  (∈ {0,1,2})
+    mtc1  t1, f10
+    cvt.s.w f10, f10                            ; f10 = float(2-phase)
+    lui   t0, 0x3EAA
+    ori   t0, t0, 0xAAAB                        ; 1/3 ≈ 0.33333334
+    mtc1  t0, f12
+    nop
+    mul.s f10, f10, f12                         ; f10 = (2-phase)/3
+    sub.s f6, f6, f10                           ; f6 -= offset
+ecs_done:
+    jr    ra
     nop
 
 
@@ -773,16 +779,20 @@ sram_init_w_name:
 .org 0x808A89C0                                ; subCamAt.y lerp (conditional)
     jal   goma_intro_lerp_scale
 
-; Bucket 13 v4 — ovl_Bg_Hidan_Syoku (Fire Temple stone elevator)
-; Replace the cosine motion with a linear ramp at 30 fps. The hook intercepts
-; the `jal cosf` in both ascent and descent and returns a linear approximation
-; of cos that matches at the 0 / pi/2 / pi anchor points (which correspond to
-; integer timer = 0 / 70 / 140 — the full extent of the cycle).
+; Bucket 13 v6 — ovl_Bg_Hidan_Syoku (Fire Temple stone elevator)
+; Bucket 13 v10 — tick-mod motion + cos interpolation + pause seed-mod.
+; All 5 sites in non-leaf functions. NO patches in func_8088F62C.
 .headersize 0x808DD5A0 - 0x00C7AD90
-.org 0x808DD734                                ; was `jal cosf` in func_8088F514 (ascent)
-    jal   hidan_syoku_linear_cos
-.org 0x808DD7C0                                ; was `jal cosf` in func_8088F5A0 (descent)
-    jal   hidan_syoku_linear_cos
+.org 0x808DD66C                                ; func_8088F47C — pause seed 60→90
+    jal   elev_seed_60
+.org 0x808DD714                                ; func_8088F514 — ascent decrement tick-mod
+    jal   elev_tick_mod
+.org 0x808DD7A0                                ; func_8088F5A0 — descent decrement tick-mod
+    jal   elev_tick_mod
+.org 0x808DD728                                ; func_8088F514 — ascent cvt + cos smooth
+    jal   elev_cos_smooth
+.org 0x808DD7B4                                ; func_8088F5A0 — descent cvt + cos smooth
+    jal   elev_cos_smooth
 
 ; Quick-test aid: corrupt-save recovery -> debug save. A blank (0xFF) SRAM
 ; fails the save checksums, so Sram_VerifyAndLoadAllSaves is redirected here to
