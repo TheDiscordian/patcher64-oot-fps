@@ -47,6 +47,60 @@ armips notes: `.headersize` = `RAM - ROM` offset (positive for N64). armips
 rebuilds the output from the clean base each run, so deleting a hook from
 `hooks.asm` fully reverts it — no stale bytes.
 
+## Live-debug a running ROM via ares' GDB server
+
+ares ships a GDB remote stub. Enable it in **Tools → Settings →
+DebugServer/Enabled** (default port 9123) and `tools/ares-gdb.sh` wraps the
+common queries + a working scene-warp.
+
+### Why this exists
+
+Save-state-based testing silently restored old overlay code from RAM when
+a save state was loaded — every patcher hook iteration appeared as "no
+change" because the new ROM's bytes never reached the running code. ares'
+GDB writes are a separate write path and survive state-loading. They're
+also how you do live-inspect + scene-warp without a 5-minute manual walk.
+
+### Subcommands
+
+```
+tools/ares-gdb.sh state                                # scene id, transition state, fps_switch, BG actor list
+tools/ares-gdb.sh elevator                             # live Bg_Hidan_Syoku state
+tools/ares-gdb.sh warp <entr_hex>                      # trigger scene transition to an entrance index
+tools/ares-gdb.sh tp <x> <y> <z>                       # teleport player to coords (no room change)
+tools/ares-gdb.sh warp-room <entr> <x> <y> <z> <room>  # scene warp + spawn-data patch
+tools/ares-gdb.sh arena                                # convenience: Flare Dancer arena (Fire Temple)
+tools/ares-gdb.sh read <addr> [n]                      # raw word read(s)
+tools/ares-gdb.sh poke <addr> <word>                   # raw word write
+```
+
+### How `warp-room` actually works (no ROM patch)
+
+1. Place a software breakpoint at `Play_InitScene` (`0x8009CDE8`) — the
+   instant the scene's spawn list + PlayerEntry list have been loaded into
+   RAM but not yet read.
+2. Write `PlayState.nextEntranceIndex` + `transitionTrigger` (still paused)
+   to trigger the engine's scene transition.
+3. `continue`. The engine fades out, DMAs the scene from cart, calls
+   `Play_InitScene` → breakpoint fires.
+4. At the breakpoint, read `PlayState.sceneSegment` (`PlayState + 0xB0` =
+   `0x801C8550`) to find the freshly-loaded scene's RAM base.
+5. Patch `SpawnList[0].room` (`scene_base + 0x3B1`) and `PlayerEntry[0].pos`
+   (`scene_base + 0x6A..0x6F`, three `s16`s).
+6. Delete breakpoint, `continue`. `Play_InitScene` reads the patched data —
+   loads the requested room, places the player at the requested coords.
+
+The patch lives in RAM only as long as the scene is loaded (the next scene
+load re-DMAs from cart) — nothing persistent, no ROM patch. This is the
+proven path: PR #7's elevator-shake iteration uses `arena` to warp into
+room 24 in one command.
+
+### When NOT to use save states
+
+If you're testing a NEW build, **do not** rely on a save state taken with
+the old build. Either walk in fresh, or use `warp-room` / `arena` — both
+trigger a fresh overlay DMA from cart so the new ROM's bytes actually run.
+
 ## Decomp-assisted research — DO THIS FIRST for any new actor
 
 The matched decomp ELF is built in-tree (`oot/build/ntsc-1.0/...`). It resolves
