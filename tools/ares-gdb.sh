@@ -11,11 +11,15 @@
 # at 0x80419832, hook bodies in payload at 0x8041AE00+).
 #
 # Usage:
-#   tools/ares-gdb.sh state           # scene / transition / fps_switch / BG actor list
-#   tools/ares-gdb.sh elevator        # live Bg_Hidan_Syoku state
-#   tools/ares-gdb.sh warp <entr>     # trigger scene transition to entrance index
-#   tools/ares-gdb.sh read <addr> [n] # raw word read(s), n defaults to 1
-#   tools/ares-gdb.sh poke <addr> <word>  # raw word write
+#   tools/ares-gdb.sh state                    # scene / transition / fps_switch / BG actor list
+#   tools/ares-gdb.sh elevator                 # live Bg_Hidan_Syoku state
+#   tools/ares-gdb.sh warp <entr>              # trigger scene transition to entrance index
+#   tools/ares-gdb.sh tp <x> <y> <z>           # teleport player to given world coords (no room change)
+#   tools/ares-gdb.sh warp-room <entr> <x> <y> <z> <room>  # scene-warp + respawn[DOWN] override
+#                                              # spawns player at given coords/room via void-out machinery
+#   tools/ares-gdb.sh arena                    # convenience: warp into the Flare Dancer arena
+#   tools/ares-gdb.sh read <addr> [n]          # raw word read(s)
+#   tools/ares-gdb.sh poke <addr> <word>       # raw word write
 #
 # Requires: gdb (system), ares running with DebugServer enabled on port 9123.
 
@@ -75,15 +79,62 @@ elevator)
 warp)
     [[ -z "$1" ]] && { echo "usage: warp <entrance_index_hex>  e.g. 0x165 (Fire Temple)"; exit 1; }
     entr=$1
-    echo "writing nextEntranceIndex=$entr + transitionTrigger=$TRANS_START to $PLAYSTATE"
     g -ex "set {short} $NEXT_ENTR     = $entr" \
-      -ex "set {char}  $TRANS_TRIGGER = $TRANS_START" \
-      -ex "x/1xh $NEXT_ENTR" \
-      -ex "x/1xb $TRANS_TRIGGER"
-    echo "transition should fire on next frame."
-    echo "⚠️ Fire Temple spawn list has ONLY spawns 0 (main entr, room 0) and 1 (Darunia, room 2)."
-    echo "   Spawn 1 risks the debug-save playerName crash. For room 24 (Flare Dancer arena)"
-    echo "   there's no direct scene-entrance — use the iteration save state instead."
+      -ex "set {char}  $TRANS_TRIGGER = $TRANS_START" >/dev/null
+    echo "scene-warp triggered: nextEntranceIdx=$entr, transTrigger=START"
+    ;;
+tp)
+    [[ -z "$3" ]] && { echo "usage: tp <x> <y> <z>  (player world.pos write — no room change)"; exit 1; }
+    # Player actor head is at actorCtx.actorLists[ACTORCAT_PLAYER].head = PlayState + 0x1C44
+    player_head=$(g -ex "x/1xw 0x801CA0E4" | tail -1 | awk '{print $2}')
+    [[ "$player_head" == "0x00000000" || -z "$player_head" ]] && { echo "no Player actor loaded"; exit 1; }
+    pos_addr=$((player_head + 0x24))
+    g -ex "set {float} $pos_addr       = $1" \
+      -ex "set {float} $((pos_addr+4)) = $2" \
+      -ex "set {float} $((pos_addr+8)) = $3" >/dev/null
+    echo "player @ $player_head moved to ($1, $2, $3)"
+    ;;
+warp-room)
+    # Pure GDB warp via in-RAM scene-spawn patching:
+    #   * BP at Play_InitScene (0x8009CDE8) — the spot where the scene's spawn
+    #     list / PlayerEntryList have been loaded into RAM but not yet read.
+    #   * Trigger a scene transition while paused.
+    #   * When BP fires, read PlayState.sceneSegment (+0xB0 in PlayState) to
+    #     find the freshly-loaded scene's RAM base.
+    #   * Patch SpawnList[0].room (scene_base+0x3B1) to the target room.
+    #   * Patch PlayerEntry[0].pos (scene_base+0x6A..0x6F) to the target XYZ.
+    #   * Delete BP, continue. Engine reads patched data → player spawns in
+    #     the requested room at the requested coords.
+    # The patch only lives in RAM as long as the scene is loaded, so this
+    # leaves no persistent state.
+    [[ -z "$5" ]] && { echo "usage: warp-room <entr_hex> <x> <y> <z> <room_dec>"; exit 1; }
+    entr=$1 x=$2 y=$3 z=$4 room=$5
+    tmp=$(mktemp)
+    cat > "$tmp" <<EOF
+set architecture mips
+set endian big
+target remote $HOST
+break *0x8009CDE8
+set {short} $NEXT_ENTR     = $entr
+set {char}  $TRANS_TRIGGER = $TRANS_START
+continue
+set \$scene_base = *(unsigned int*)0x801C8550
+set {short} (\$scene_base + 0x6A) = $x
+set {short} (\$scene_base + 0x6C) = $y
+set {short} (\$scene_base + 0x6E) = $z
+set {char}  (\$scene_base + 0x3B1) = $room
+delete breakpoints
+continue&
+detach
+EOF
+    gdb --batch --command="$tmp" 2>&1 | grep -vE '^The target|^warning: No exec|^0x[0-9a-f]+ in|determining executable|file.*command|Inferior.*detached|Cannot execute.*target is running|interrupt.*command' | sed '/^$/d'
+    rm -f "$tmp"
+    echo "warp executed: entr=$entr room=$room pos=($x, $y, $z)"
+    ;;
+arena)
+    # Convenience: warp into the Flare Dancer arena (Fire Temple room 24,
+    # near but not on the Bg_Hidan_Syoku platform).
+    "$0" warp-room 0x165 -2700 2840 130 24
     ;;
 read)
     [[ -z "$1" ]] && { echo "usage: read <addr_hex> [count]"; exit 1; }
