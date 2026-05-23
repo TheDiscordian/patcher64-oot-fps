@@ -663,6 +663,99 @@ sram_init_w_name:
     jr    ra
     nop
 
+; ---- Bucket 45: En_Fw (Flare Dancer core) AI timers — tick-mod ----
+; 5 raw `timer--` s16 fields in the Flare Dancer core actor. At 30 fps these
+; tick 1.5x too fast: damage-flash too short, explosion too short, slide
+; attack too quick, head-return-to-parent timeout misaligned. Tick-mod via
+; the frame_phase byte.
+;
+; CRITICAL design note: each original site is `sh tN, off(s0)` IMMEDIATELY
+; followed by a `lh rM, off(s0)` that reloads the just-stored value for a
+; downstream branch (`if (timer == 0) ...`). Replacing the `sh` with a
+; bare `jal` puts the JAL's delay-slot lh BEFORE the hook's store - reload
+; sees the OLD value - branch decides wrong. Symptom: at the Flare Dancer
+; fight, the core's death sequence never completes the bomb-spawn (loops
+; forever even at 20 fps); also subtler mistimes at 30 fps.
+;
+; FIX: each hook stores the (conditionally undecremented) value FIRST,
+; then re-loads the same register the original delay-slot lh expected,
+; INSIDE jr ra's delay slot. The lh that originally ran in the JAL's
+; delay slot still executes with stale data, but our jr-delay-slot lh
+; overwrites the same register with the correct post-store value before
+; control reaches the downstream branch. fw_damage's delay slot is a
+; mtc1 (no timer reload), so it can use a plain nop in the jr delay slot.
+
+fw_explo:                                       ; site 0x80978750 (sh r25=t9, off 0x1FA, explosionTimer)
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)                      ; fps_switch
+    beqz  v0, fw_explo_st                      ; 20 fps -> just store + reload
+    lui   v0, 0x801C                           ; (delay slot)
+    lbu   v0, 0x6FB4(v0)                       ; frame_phase
+    bnez  v0, fw_explo_st                      ; phase 1/2 -> decrement (store as-is)
+    nop
+    addiu t9, t9, 1                            ; phase 0 -> undo the decrement
+fw_explo_st:
+    sh    t9, 0x1FA(s0)                        ; authoritative store
+    jr    ra
+    lh    t0, 0x1FA(s0)                        ; (delay slot) reload r8 (=t0); was at 0x80978754
+
+fw_damage:                                      ; site 0x80978820 (sh r14=t6, off 0x1F8, damageTimer)
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fw_damage_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fw_damage_st
+    nop
+    addiu t6, t6, 1
+fw_damage_st:
+    sh    t6, 0x1F8(s0)
+    jr    ra
+    nop                                        ; (delay slot) no reload — original was mtc1, independent
+
+fw_rtp:                                         ; site 0x80978870 (sh r15=t7, off 0x202, returnToParentTimer)
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fw_rtp_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fw_rtp_st
+    nop
+    addiu t7, t7, 1
+fw_rtp_st:
+    sh    t7, 0x202(s0)
+    jr    ra
+    lh    v0, 0x202(s0)                        ; (delay slot) reload r2 (=v0); was at 0x80978874
+
+fw_slideSfx:                                    ; site 0x80978A18 (sh r12=t4, off 0x200, slideSfxTimer)
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fw_slideSfx_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fw_slideSfx_st
+    nop
+    addiu t4, t4, 1
+fw_slideSfx_st:
+    sh    t4, 0x200(s0)
+    jr    ra
+    lh    v0, 0x200(s0)                        ; (delay slot) reload r2 (=v0); was at 0x80978A1C
+
+fw_slide:                                       ; site 0x80978ACC (sh r24=t8, off 0x1FE, slideTimer)
+    lui   v0, 0x8042
+    lbu   v0, -0x67CE(v0)
+    beqz  v0, fw_slide_st
+    lui   v0, 0x801C
+    lbu   v0, 0x6FB4(v0)
+    bnez  v0, fw_slide_st
+    nop
+    addiu t8, t8, 1
+fw_slide_st:
+    sh    t8, 0x1FE(s0)
+    jr    ra
+    lh    t9, 0x1FE(s0)                        ; (delay slot) reload r25 (=t9); was at 0x80978AD0
+
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -823,5 +916,18 @@ sram_init_w_name:
     addiu t6, zero, 0xFF
 .org 0x80800A08                                ; was `jal 0x800900EC` (Sram_InitDebugSave)
     jal   sram_init_w_name
+
+; Bucket 45 — ovl_En_Fw (Flare Dancer core AI timers)
+.headersize 0x80977E80 - 0x00D15510
+.org 0x80978750                                ; was `sh r25, 0x1FA(s0)` (explosionTimer)
+    jal   fw_explo
+.org 0x80978820                                ; was `sh r14, 0x1F8(s0)` (damageTimer)
+    jal   fw_damage
+.org 0x80978870                                ; was `sh r15, 0x202(s0)` (returnToParentTimer)
+    jal   fw_rtp
+.org 0x80978A18                                ; was `sh r12, 0x200(s0)` (slideSfxTimer)
+    jal   fw_slideSfx
+.org 0x80978ACC                                ; was `sh r24, 0x1FE(s0)` (slideTimer)
+    jal   fw_slide
 
 .close
