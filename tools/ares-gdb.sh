@@ -142,26 +142,50 @@ EOF
     echo "warp executed: entr=$entr room=$room pos=($x, $y, $z)"
     ;;
 arena)
-    # Warp into the Flare Dancer arena (Fire Temple room 24, near but not on
-    # the Bg_Hidan_Syoku platform).
+    # Warp into the Flare Dancer arena (Fire Temple room 24, near the
+    # Bg_Hidan_Syoku platform). Optional first arg: adult|child sets linkAge
+    # before the warp.
     #
-    # Detects current game state and picks the right warp mechanism:
-    #   * In PlayState: write PlayState.nextEntranceIndex + transitionTrigger,
-    #     BP at Play_InitScene, patch scene, continue.
-    #   * In any other state (MapSelect, etc): call MapSelect_LoadGame via $pc
-    #     with the relocated runtime address (engine drives the transition),
-    #     BP at Play_InitScene, patch scene, continue.
-    main_fn=$(g -ex "x/1xw 0x801C84A4" 2>/dev/null | tail -1 | awk '{print $2}')
+    # Two flat GDB scripts (no GDB-side if/else — that was the bug). Bash
+    # reads gameState->main, picks the right script, runs it. Same form as
+    # the manual gdb invocations that have always worked.
+    age=${1:-}
+    case "$age" in
+        adult) g -ex "set {int} 0x8011A5D4 = 0" >/dev/null; echo "linkAge = 0 (adult)" ;;
+        child) g -ex "set {int} 0x8011A5D4 = 1" >/dev/null; echo "linkAge = 1 (child)" ;;
+        '') ;;
+        *) echo "arena: optional age arg must be 'adult' or 'child'"; exit 1 ;;
+    esac
+    main_fn=$(g -ex "x/1xw 0x801C84A4" | tail -1 | awk '{print $2}')
+    tmp=$(mktemp)
     if [[ "$main_fn" == "0x8009cac8" ]]; then
-        "$0" warp-room 0x165 -2700 2840 130 24
-    else
-        tmp=$(mktemp)
+        # Already in Play_Main — trigger the transition via PlayState fields.
         cat > "$tmp" <<EOF
 set architecture mips
 set endian big
 target remote $HOST
-set \$main_runtime = *(unsigned int*)0x801C84A4
-set \$reloc_delta  = 0x80801BDC - \$main_runtime
+set {short} 0x801DA2BA = 0x165
+set {char}  0x801DA2B5 = 20
+break *0x8009CDE8
+continue
+set \$scene_base = *(unsigned int*)0x801C8550
+set {short} (\$scene_base + 0x6A) = -2700
+set {short} (\$scene_base + 0x6C) = 2840
+set {short} (\$scene_base + 0x6E) = 130
+set {char}  (\$scene_base + 0x3B1) = 24
+delete breakpoints
+continue&
+detach
+EOF
+    else
+        # MapSelect (or boot intermediate) — call MapSelect_LoadGame via \$pc.
+        # MapSelect overlay relocates at runtime; compute delta from the
+        # runtime main fn vs static MapSelect_Main (0x80801BDC).
+        cat > "$tmp" <<EOF
+set architecture mips
+set endian big
+target remote $HOST
+set \$reloc_delta  = 0x80801BDC - *(unsigned int*)0x801C84A4
 set \$load_game_rt = 0x808009E0 - \$reloc_delta
 set \$a0 = 0x801C84A0
 set \$a1 = 0x165
@@ -178,10 +202,13 @@ delete breakpoints
 continue&
 detach
 EOF
-        gdb --batch --command="$tmp" 2>&1 | grep -vE 'GDB is unable|GDB may be|This means|This problem|However, if|search farther|set heuristic|determining executable|file.*command|Inferior.*detached|Cannot execute.*target is running|interrupt.*command|warning: No exec|^The target|^and thus|^and then|^the frames|^stack pointer|^from 0x|^function' | sed '/^$/d'
-        rm -f "$tmp"
-        echo "warped to arena via MapSelect_LoadGame"
     fi
+    gdb --batch --command="$tmp" 2>&1 \
+        | grep -vE '^(The target|warning:|0x[0-9a-f]+ in|\[Inferior)' \
+        | grep -vE 'determining executable|file.*command|Error in sourced command file|Cannot execute this command while the target is running' \
+        | sed '/^$/d' || true
+    rm -f "$tmp"
+    echo "arena warp dispatched (state main_fn=$main_fn)"
     ;;
 boot)
     rom=${1:-work/oot-redux-30fps.z64}
