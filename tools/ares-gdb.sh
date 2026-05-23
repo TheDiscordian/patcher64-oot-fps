@@ -142,9 +142,46 @@ EOF
     echo "warp executed: entr=$entr room=$room pos=($x, $y, $z)"
     ;;
 arena)
-    # Convenience: warp into the Flare Dancer arena (Fire Temple room 24,
-    # near but not on the Bg_Hidan_Syoku platform).
-    "$0" warp-room 0x165 -2700 2840 130 24
+    # Warp into the Flare Dancer arena (Fire Temple room 24, near but not on
+    # the Bg_Hidan_Syoku platform).
+    #
+    # Detects current game state and picks the right warp mechanism:
+    #   * In PlayState: write PlayState.nextEntranceIndex + transitionTrigger,
+    #     BP at Play_InitScene, patch scene, continue.
+    #   * In any other state (MapSelect, etc): call MapSelect_LoadGame via $pc
+    #     with the relocated runtime address (engine drives the transition),
+    #     BP at Play_InitScene, patch scene, continue.
+    main_fn=$(g -ex "x/1xw 0x801C84A4" 2>/dev/null | tail -1 | awk '{print $2}')
+    if [[ "$main_fn" == "0x8009cac8" ]]; then
+        "$0" warp-room 0x165 -2700 2840 130 24
+    else
+        tmp=$(mktemp)
+        cat > "$tmp" <<EOF
+set architecture mips
+set endian big
+target remote $HOST
+set \$main_runtime = *(unsigned int*)0x801C84A4
+set \$reloc_delta  = 0x80801BDC - \$main_runtime
+set \$load_game_rt = 0x808009E0 - \$reloc_delta
+set \$a0 = 0x801C84A0
+set \$a1 = 0x165
+set \$ra = \$pc
+set \$pc = \$load_game_rt
+break *0x8009CDE8
+continue
+set \$scene_base = *(unsigned int*)0x801C8550
+set {short} (\$scene_base + 0x6A) = -2700
+set {short} (\$scene_base + 0x6C) = 2840
+set {short} (\$scene_base + 0x6E) = 130
+set {char}  (\$scene_base + 0x3B1) = 24
+delete breakpoints
+continue&
+detach
+EOF
+        gdb --batch --command="$tmp" 2>&1 | grep -vE 'GDB is unable|GDB may be|This means|This problem|However, if|search farther|set heuristic|determining executable|file.*command|Inferior.*detached|Cannot execute.*target is running|interrupt.*command|warning: No exec|^The target|^and thus|^and then|^the frames|^stack pointer|^from 0x|^function' | sed '/^$/d'
+        rm -f "$tmp"
+        echo "warped to arena via MapSelect_LoadGame"
+    fi
     ;;
 boot)
     rom=${1:-work/oot-redux-30fps.z64}
@@ -196,15 +233,19 @@ link-age)
     echo "linkAge = $age ($1)"
     ;;
 setup)
-    # Fully automated: boot ROM, wait for MapSelect, call MapSelect_LoadGame
-    # via $pc with proper args + relocation. Engine handles all of its own
-    # state-transition setup. No user input required.
+    # Fully automated: boot ROM, wait for MapSelect to be active, call
+    # MapSelect_LoadGame via $pc with proper args + relocation. Engine
+    # handles all of its own state-transition setup. No user input required.
     #
     # MapSelect is an overlay that relocates at runtime — its static map
     # address (0x80801BDC for MapSelect_Main, 0x808009E0 for MapSelect_LoadGame)
     # does NOT match the runtime address. We read MapSelect_Main's actual
-    # runtime address from gameState->main, compute the relocation delta, and
-    # apply it to MapSelect_LoadGame before the $pc jump.
+    # runtime address from gameState->main, compute the relocation delta,
+    # and apply it to MapSelect_LoadGame before the $pc jump.
+    #
+    # Implementation note: wait loop uses `until` over a single state-read
+    # command (no bash for-loop spawning many gdb invocations). All the
+    # writes + BP + patch + continue happen in ONE gdb --batch invocation.
     [[ -z "$2" ]] && { echo "usage: setup <child|adult> <target>  e.g. setup child arena"; exit 1; }
     age=$1
     target=$2
@@ -220,31 +261,23 @@ setup)
 
     "$0" boot >/dev/null || exit 1
 
-    # Wait for MapSelect's main fn to settle. Reject Play_Main (0x8009CAC8)
-    # and the zero/junk values during early boot. Two consecutive matching
-    # reads = stable state.
-    echo "waiting for MapSelect to settle..."
-    last_fn=
-    for i in $(seq 1 60); do
-        main_fn=$(g -ex "x/1xw 0x801C84A4" 2>/dev/null | tail -1 | awk '{print $2}')
-        if [[ "$main_fn" != "0x00000000" && "$main_fn" != "0x8009cac8" && -n "$main_fn" ]]; then
-            if [[ "$main_fn" == "$last_fn" ]]; then
-                echo "MapSelect active (main fn $main_fn after $i polls)"
-                break
-            fi
-            last_fn=$main_fn
-        fi
-        sleep 0.5
-    done
+    # Block until gameState->main is something other than zero (early boot)
+    # or Play_Main (in case we somehow re-enter). One read per second.
+    echo "waiting for MapSelect to become active..."
+    until
+        fn=$(g -ex "x/1xw 0x801C84A4" 2>/dev/null | tail -1 | awk '{print $2}')
+        [[ "$fn" != "0x00000000" && "$fn" != "0x8009cac8" && -n "$fn" ]]
+    do sleep 1; done
+    echo "MapSelect active (main fn $fn)"
 
     tmp=$(mktemp)
     cat > "$tmp" <<EOF
 set architecture mips
 set endian big
 target remote $HOST
-set \$main_runtime  = *(unsigned int*)0x801C84A4
-set \$reloc_delta   = 0x80801BDC - \$main_runtime
-set \$load_game_rt  = 0x808009E0 - \$reloc_delta
+set \$main_runtime = *(unsigned int*)0x801C84A4
+set \$reloc_delta  = 0x80801BDC - \$main_runtime
+set \$load_game_rt = 0x808009E0 - \$reloc_delta
 set {int} 0x8011A5D4 = $age_val
 set \$a0 = 0x801C84A0
 set \$a1 = $entr
