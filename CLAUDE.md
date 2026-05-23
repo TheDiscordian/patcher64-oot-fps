@@ -247,5 +247,20 @@ Buckets 4 & 5. See Status above.
   test order; (b) verify the location actually PERMITS the test — the Temple of
   Time, Castle Town and similar scenes restrict bombs and most held items, so a
   "throw a bomb here" test silently cannot run there.
+- **No internal IDs in human-facing communication.** Room numbers, actor IDs,
+  scene indices, entrance numbers, and similar decomp / map-data identifiers
+  are NOT in the game UI and are meaningless to anyone playing OoT. Use
+  descriptive landmarks the player can actually see and recognise:
+  - ❌ "Walk through the door to room 1" → ✅ "Walk through the door into the
+    central pillar with the cycling stone platforms over the lava."
+  - ❌ "Enter room 10" → ✅ "Enter the corridor with the moving fire walls
+    and rolling boulders."
+  - ❌ "Test in room 24" → ✅ "Test in the Flare Dancer arena (the room with
+    the fire curtain that snaps shut when you enter)."
+  Decomp-side coordinates (X, Y, Z), key-flag numbers, and actor-table IDs
+  are fine when they identify a specific door / load-zone / spawn (those are
+  the unambiguous breakdown of "which door, exactly") — the room number that
+  door leads INTO should still be a description. Internal IDs are tools for
+  YOU reading the source, not for the user navigating the game.
 - Keep this file, `PROGRESS.md`, and `work/PAYLOAD_ANALYSIS.md` honest and
   current — a stale "recommendation" here will cause repeated work.
