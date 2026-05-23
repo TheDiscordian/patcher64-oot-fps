@@ -25,3 +25,4 @@ tools/*
 !src/*.asm
 !work/*.md
 !tools/decomp.py
+!tools/ares-gdb.sh
