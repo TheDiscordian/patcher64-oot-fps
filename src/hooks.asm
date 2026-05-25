@@ -663,6 +663,45 @@ sram_init_w_name:
     jr    ra
     nop
 
+; ---- Cutscene curFrame tick-mod ----
+; CutsceneHandler_RunScript (z_demo.c:2245, RAM 0x80056908) advances
+; `csCtx->curFrame++` once per Update call. Every scripted cutscene in the
+; game is timed in terms of curFrame assuming 20 fps; at 30 fps the script
+; advances 1.5x too fast, so camera moves / FOV changes / fades / actor
+; triggers all fire 1.5x sooner. User-confirmed at the cutscene zoom-in
+; pacing.
+;
+; Same tick-mod family as Bucket 7 (torch_timer) — gate the increment on
+; the frame_phase byte so 1 in 3 frames at 30 fps skips it. 30 game-frames
+; of update -> 20 frames of script advance -> wall-clock matches 20 fps.
+;
+; Injection at 0x80056928 (the `lhu r15, 0x10(r5)` that loads curFrame
+; before the addiu/sh increment). Enters with `j` (not `jal`) because the
+; original three-instruction sequence is followed by a JAL to
+; Cutscene_ProcessScript at 0x80056934, and JAL-in-delay-slot is undefined
+; on R4300 — so we can't replace the sh at 0x80056930 with a jal. Using
+; `j` here avoids touching ra; the hook does the load + conditional inc +
+; store itself with its own scratch register (t1) and `j`s back to
+; 0x80056934 (the ProcessScript JAL), skipping the now-stale addiu/sh
+; pair at 0x8005692c/0x80056930. r24 corruption from the displaced
+; delay-slot addiu is harmless — r24 isn't read downstream.
+cutscene_curframe_tick:
+    lui   t0, 0x8042
+    lbu   t0, -0x67CE(t0)                      ; fps_switch
+    beqz  t0, cct_inc                          ; 20 fps -> always increment
+    nop
+    lui   t0, 0x801C
+    lbu   t0, 0x6FB4(t0)                       ; frame_phase
+    beqz  t0, cct_resume                       ; phase 0 -> skip increment (tick-mod)
+    nop
+cct_inc:
+    lhu   t1, 0x10(a1)                         ; load csCtx->curFrame (a1 = $r5 = csCtx)
+    addiu t1, t1, 1
+    sh    t1, 0x10(a1)                         ; curFrame++
+cct_resume:
+    j     0x80056934                           ; resume at the original ProcessScript JAL
+    nop
+
 ; ---- 30 FPS on by default ----
 .org 0x80400069                                ; CFG_DEFAULT_30_FPS
     .byte 0x01
@@ -678,6 +717,13 @@ sram_init_w_name:
 ; Bucket 8 — code segment (Letterbox_Update, leaf fn → `j` not `jal`)
 .org 0x800996D4                                ; was `addiu a2,a2,-7048`
     j     letterbox_step
+
+; Cutscene curFrame tick-mod — code segment. Replaces the `lhu r15, 0x10(r5)`
+; that loads curFrame in CutsceneHandler_RunScript with an unconditional jump
+; to the hook (`j`, not `jal`, to dodge JAL-in-delay-slot UB with the
+; downstream Cutscene_ProcessScript JAL at 0x80056934).
+.org 0x80056928                                ; was `lhu r15, 0x10(r5)`
+    j     cutscene_curframe_tick
 
 ; Bucket 3 — ovl_En_Bom
 .headersize 0x80870A00 - 0x00C0E2D0
