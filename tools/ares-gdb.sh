@@ -16,13 +16,16 @@
 #                                              # default: work/oot-redux-30fps.z64
 #   tools/ares-gdb.sh wait-play [timeout_sec]  # block until ares is in Play state (default 60s)
 #   tools/ares-gdb.sh link-age <child|adult>   # set gSaveContext.save.linkAge
-#   tools/ares-gdb.sh warp <entr>              # trigger scene transition to entrance index
+#   tools/ares-gdb.sh warp <entr> [age]        # trigger scene transition to entrance index
 #                                              # Works from MapSelect OR in-game.
+#                                              # Optional age: adult|child sets linkAge first.
 #   tools/ares-gdb.sh tp <x> <y> <z>           # teleport player to given world coords (no room change)
-#   tools/ares-gdb.sh warp-room <entr> <x> <y> <z> <room>  # scene-warp + spawn-data patch
+#   tools/ares-gdb.sh warp-room <entr> <x> <y> <z> <room> [age]
+#                                              # scene-warp + spawn-data patch
 #                                              # BPs Play_InitScene, patches scene's SpawnList/PlayerEntry
 #                                              # in RAM, continues. Pure GDB, no ROM patch.
 #                                              # Works from MapSelect OR in-game.
+#                                              # Optional age: adult|child sets linkAge first.
 #   tools/ares-gdb.sh preset <name> [adult|child]  # named-location alias for warp-room
 #                                              # known presets: arena (Flare Dancer, Fire Temple)
 #   tools/ares-gdb.sh read <addr> [n]          # raw word read(s)
@@ -74,8 +77,15 @@ warp)
     # dispatch happen in ONE halted gdb session (race-free).
     #   Play_Main           → write PlayState.nextEntranceIndex + transitionTrigger
     #   MapSelect / boot    → call MapSelect_LoadGame via $pc (overlay reloc handled)
-    [[ -z "$1" ]] && { echo "usage: warp <entrance_index_hex>  e.g. 0x165 (Fire Temple)"; exit 1; }
-    entr=$1
+    # Optional 2nd arg: adult|child sets gSaveContext.save.linkAge before warping.
+    [[ -z "$1" ]] && { echo "usage: warp <entrance_index_hex> [adult|child]  e.g. 0x165 adult (Fire Temple)"; exit 1; }
+    entr=$1; age=${2:-}
+    case "$age" in
+        adult) g -ex "set {int} 0x8011A5D4 = 0" >/dev/null; echo "linkAge = 0 (adult)" ;;
+        child) g -ex "set {int} 0x8011A5D4 = 1" >/dev/null; echo "linkAge = 1 (child)" ;;
+        '') ;;
+        *) echo "age must be 'adult' or 'child'"; exit 1 ;;
+    esac
     tmp=$(mktemp)
     cat > "$tmp" <<EOF
 set architecture mips
@@ -126,8 +136,15 @@ warp-room)
     #   5. Delete BP, continue. Engine reads patched data, player spawns at
     #      the requested room + coords.
     # Lives only in RAM for as long as the scene is loaded — no ROM patch.
-    [[ -z "$5" ]] && { echo "usage: warp-room <entr_hex> <x> <y> <z> <room_dec>"; exit 1; }
-    entr=$1 x=$2 y=$3 z=$4 room=$5
+    # Optional 6th arg: adult|child sets gSaveContext.save.linkAge before warping.
+    [[ -z "$5" ]] && { echo "usage: warp-room <entr_hex> <x> <y> <z> <room_dec> [adult|child]"; exit 1; }
+    entr=$1 x=$2 y=$3 z=$4 room=$5 age=${6:-}
+    case "$age" in
+        adult) g -ex "set {int} 0x8011A5D4 = 0" >/dev/null; echo "linkAge = 0 (adult)" ;;
+        child) g -ex "set {int} 0x8011A5D4 = 1" >/dev/null; echo "linkAge = 1 (child)" ;;
+        '') ;;
+        *) echo "age must be 'adult' or 'child'"; exit 1 ;;
+    esac
     tmp=$(mktemp)
     cat > "$tmp" <<EOF
 set architecture mips

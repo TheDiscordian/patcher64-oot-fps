@@ -65,14 +65,21 @@ also how you do live-inspect + scene-warp without a 5-minute manual walk.
 
 ```
 tools/ares-gdb.sh state                                # scene id, transition state, fps_switch, BG actor list
-tools/ares-gdb.sh elevator                             # live Bg_Hidan_Syoku state
-tools/ares-gdb.sh warp <entr_hex>                      # trigger scene transition to an entrance index
+tools/ares-gdb.sh boot [rom_path]                      # kill existing ares + launch (default work/oot-redux-30fps.z64)
+tools/ares-gdb.sh wait-play [timeout_sec]              # block until ares is in Play state
+tools/ares-gdb.sh link-age <child|adult>               # set gSaveContext.save.linkAge
+tools/ares-gdb.sh warp <entr_hex> [age]                # scene-transition to entrance index (Map Select OR in-game)
 tools/ares-gdb.sh tp <x> <y> <z>                       # teleport player to coords (no room change)
-tools/ares-gdb.sh warp-room <entr> <x> <y> <z> <room>  # scene warp + spawn-data patch
-tools/ares-gdb.sh arena                                # convenience: Flare Dancer arena (Fire Temple)
+tools/ares-gdb.sh warp-room <entr> <x> <y> <z> <room>  # scene warp + spawn-data patch (room + coords)
+tools/ares-gdb.sh preset <name> [adult|child]          # named-location alias for warp-room (known: arena)
 tools/ares-gdb.sh read <addr> [n]                      # raw word read(s)
 tools/ares-gdb.sh poke <addr> <word>                   # raw word write
 ```
+
+`warp` and `warp-room` both work from Map Select **or** mid-game — they read
+`PlayState.main` and dispatch (`Play_Main` → write transition fields;
+`MapSelect_Main` → jump to `MapSelect_LoadGame` via `$pc` with overlay-reloc
+handling). Single halted gdb session, race-free.
 
 ### How `warp-room` actually works (no ROM patch)
 
@@ -92,14 +99,32 @@ tools/ares-gdb.sh poke <addr> <word>                   # raw word write
 
 The patch lives in RAM only as long as the scene is loaded (the next scene
 load re-DMAs from cart) — nothing persistent, no ROM patch. This is the
-proven path: PR #7's elevator-shake iteration uses `arena` to warp into
-room 24 in one command.
+proven path: PR #7's elevator-shake iteration uses `preset arena adult` to
+warp into the Fire Temple Flare Dancer arena in one command.
 
 ### When NOT to use save states
 
 If you're testing a NEW build, **do not** rely on a save state taken with
-the old build. Either walk in fresh, or use `warp-room` / `arena` — both
-trigger a fresh overlay DMA from cart so the new ROM's bytes actually run.
+the old build. Either walk in fresh, or use `warp` / `warp-room` / `preset`
+— all trigger a fresh overlay DMA from cart so the new ROM's bytes actually
+run.
+
+### Mandatory: warp the user to the test site
+
+**Every time** you launch ares for a user test, the same reply MUST include
+an `ares-gdb.sh` warp invocation that places Link at the test target. The
+user does not navigate. Specifically:
+
+- Single scene test (any actor that exists at the scene's default spawn): a
+  `tools/ares-gdb.sh warp <entr_hex> <age>` line.
+- Test target lives in a specific room or coords inside the scene: a
+  `tools/ares-gdb.sh warp-room <entr_hex> <x> <y> <z> <room>` line.
+- A named preset (e.g. Flare Dancer arena): `tools/ares-gdb.sh preset <name> <age>`.
+
+The warp **must come in the same reply that hands off the test** — not in
+a follow-up turn, not "run this if you want". The Test handoffs convention
+below makes the warp line mandatory: a handoff without a warp is a failed
+handoff.
 
 ## Decomp-assisted research — DO THIS FIRST for any new actor
 
@@ -288,15 +313,18 @@ Buckets 4 & 5. See Status above.
   If two observations seem to conflict, both stand — find why they differ.
 - **Test handoffs are mandatory, explicit, FAST, and VERIFIED.** Whenever ares
   is launched for the user to test, the reply MUST state: (1) exactly which
-  bucket(s) to test, (2) the fixed-vs-broken values, (3) what work remains.
-  AND it MUST give a fast way to reach the test — never "go fight X in dungeon
-  Y". OoT is a 13 h game; manual navigation is unacceptable.
-  CRITICAL: the fast route must be VERIFIED to actually place the user at or
+  bucket(s) to test, (2) the fixed-vs-broken values, (3) what work remains,
+  (4) a `tools/ares-gdb.sh warp` / `warp-room` / `preset` line that puts Link
+  at the test target. Manual navigation is unacceptable — OoT is a 13 h game
+  and the warp tool now reaches every entrance in one command. Never write
+  "go fight X in dungeon Y" or "walk through the door on the north wall"; if
+  the target needs a specific room or coords inside the scene, use `warp-room`.
+  CRITICAL: the warp must be VERIFIED to actually place the user at or
   with the test target. "The dungeon contains X" is NOT "you spawn next to X"
   — that is the same lazy hand-wave as "go find a Stalfos". Before handing over
   a route: confirm from the decomp scene/room actor data that the target actor
-  is in that exact room/spawn, or spawn the test actor directly so it is
-  guaranteed. Do not assume; do not state a route works without checking.
+  is in that exact room/spawn, or use `warp-room` to force the spawn directly so
+  it is guaranteed. Do not assume; do not state a warp works without checking.
   ALSO: (a) never hand over a test the user has DEFERRED — respect their stated
   test order; (b) verify the location actually PERMITS the test — the Temple of
   Time, Castle Town and similar scenes restrict bombs and most held items, so a
